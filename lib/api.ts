@@ -8,6 +8,9 @@ import type {
   RunResults,
   HealthResponse,
   Query,
+  SheetFetchResponse,
+  SheetValidateResponse,
+  VisibilityReport,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -59,6 +62,8 @@ export async function startRun(config: RunConfig): Promise<JobCreatedResponse> {
     providers: config.providers,
     openai_model: config.openaiModel || 'gpt-4.1-mini',
     gemini_model: config.geminiModel || 'gemini-2.5-flash',
+    perplexity_model: config.perplexityModel || 'sonar',
+    anthropic_model: config.anthropicModel || 'claude-sonnet-4-20250514',
     mode: config.mode,
     queries: config.queries.map(q => ({
       question: q.question,
@@ -232,6 +237,109 @@ export async function pollRunStatus(
 
     poll();
   });
+}
+
+// Google Sheets integration
+export async function fetchSheetPrompts(
+  sheetUrl: string,
+  worksheetName?: string,
+  forceRefresh: boolean = false
+): Promise<SheetFetchResponse> {
+  const response = await fetchAPI<any>('/api/sheets/prompts', {
+    method: 'POST',
+    body: JSON.stringify({
+      sheet_url: sheetUrl,
+      worksheet_name: worksheetName,
+      force_refresh: forceRefresh,
+    }),
+  });
+
+  return {
+    prompts: response.prompts.map((p: any) => ({
+      promptId: p.prompt_id,
+      category: p.category,
+      question: p.question,
+    })),
+    totalCount: response.total_count,
+    columnsDetected: {
+      question: response.columns_detected?.question,
+      category: response.columns_detected?.category,
+    },
+    allColumns: response.all_columns || [],
+    cached: response.cached,
+    sheetTitle: response.sheet_title,
+    sheetId: response.sheet_id,
+  };
+}
+
+export async function validateSheetUrl(url: string): Promise<SheetValidateResponse> {
+  const response = await fetchAPI<any>(`/api/sheets/validate?url=${encodeURIComponent(url)}`);
+
+  return {
+    valid: response.valid,
+    sheetId: response.sheet_id,
+    sheetTitle: response.sheet_title,
+    totalPrompts: response.total_prompts,
+    columns: response.columns,
+    columnsDetected: response.columns_detected,
+    error: response.error,
+  };
+}
+
+// Visibility Reports
+export async function generateVisibilityReport(
+  brandName: string,
+  resultsSummary: any,
+  detailedResults: any[],
+  jobId?: string,
+  provider: string = 'openai',
+  model: string = 'gpt-4.1',
+  forceRegenerate: boolean = false
+): Promise<VisibilityReport> {
+  const response = await fetchAPI<any>('/api/reports/visibility', {
+    method: 'POST',
+    body: JSON.stringify({
+      job_id: jobId,
+      brand_name: brandName,
+      results_summary: resultsSummary,
+      detailed_results: detailedResults,
+      provider,
+      model,
+      force_regenerate: forceRegenerate,
+    }),
+  });
+
+  return {
+    report: response.report,
+    generatedAt: response.generated_at,
+    provider: response.provider,
+    model: response.model,
+    tokensUsed: response.tokens_used,
+    brandName: response.brand_name,
+    saved: response.saved,
+    fromCache: response.from_cache,
+    error: response.error,
+  };
+}
+
+export async function getCachedReport(jobId: string): Promise<VisibilityReport | null> {
+  try {
+    const response = await fetchAPI<any>(`/api/reports/${jobId}`);
+    return {
+      report: response.report,
+      generatedAt: response.generated_at,
+      provider: response.provider,
+      model: response.model,
+      tokensUsed: response.tokens_used,
+      brandName: response.brand_name,
+      fromCache: true,
+    };
+  } catch (error) {
+    if (error instanceof APIError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export { APIError };

@@ -39,6 +39,7 @@ import {
   getRunStatus,
   getRunResults,
   checkHealth,
+  fetchSheetPrompts,
 } from '@/lib/api';
 import type {
   RunConfig,
@@ -49,7 +50,10 @@ import type {
   Provider,
   Mode,
   Source,
+  SheetPrompt,
 } from '@/lib/types';
+import { SheetInput } from '@/components/SheetInput';
+import { VisibilityReport } from '@/components/VisibilityReport';
 import {
   cn,
   formatDuration,
@@ -151,6 +155,30 @@ const PROVIDER_OPTIONS = [
       { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' },
       { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
       { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' },
+    ]
+  },
+  {
+    id: 'perplexity' as Provider,
+    name: 'Perplexity',
+    icon: '🔍',
+    color: 'bg-purple-500',
+    description: 'Native web search built-in',
+    models: [
+      { id: 'sonar', name: 'Sonar (Recommended)' },
+      { id: 'sonar-pro', name: 'Sonar Pro' },
+      { id: 'sonar-reasoning', name: 'Sonar Reasoning' },
+    ]
+  },
+  {
+    id: 'anthropic' as Provider,
+    name: 'Anthropic Claude',
+    icon: '🧠',
+    color: 'bg-orange-500',
+    description: 'Uses RAG for web mode',
+    models: [
+      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (Recommended)' },
+      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (Fast)' },
+      { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (Most Capable)' },
     ]
   },
 ];
@@ -374,6 +402,21 @@ function QueryConfig({
   const [queriesText, setQueriesText] = useState(queries.map((q) => q.question).join('\n'));
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<'manual' | 'sheets'>('manual');
+  const [sheetPromptsLoaded, setSheetPromptsLoaded] = useState(false);
+  const [sheetError, setSheetError] = useState<string | null>(null);
+
+  const handleSheetPromptsLoaded = (prompts: SheetPrompt[], total: number) => {
+    const questionsText = prompts.map(p => p.question).join('\n');
+    setQueriesText(questionsText);
+    setSheetPromptsLoaded(true);
+    setSheetError(null);
+  };
+
+  const handleSheetError = (error: string) => {
+    setSheetError(error);
+    setSheetPromptsLoaded(false);
+  };
 
   const handleLoadSamples = () => {
     const samples = getSampleQueriesForIndustry(industry, language).slice(0, questionCount);
@@ -495,27 +538,73 @@ function QueryConfig({
       </div>
 
       <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-        <div className="flex items-center justify-between mb-4">
-          <label className="text-sm font-medium">
-            Questions ({currentQueryCount} / {questionCount})
-          </label>
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={handleLoadSamples}
-              className="text-xs px-3 py-1.5 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
-            >
-              Load Samples
-            </button>
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="text-xs px-3 py-1.5 bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 rounded-md transition-colors flex items-center gap-1"
-            >
-              {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-              AI Generate ({questionCount})
-            </button>
-          </div>
+        {/* Input Mode Toggle */}
+        <div className="flex items-center gap-2 mb-4 p-1 bg-dark-700 rounded-lg w-fit">
+          <button
+            onClick={() => setInputMode('manual')}
+            className={cn(
+              'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+              inputMode === 'manual'
+                ? 'bg-primary-500 text-white'
+                : 'text-dark-400 hover:text-white'
+            )}
+          >
+            Manual Entry
+          </button>
+          <button
+            onClick={() => setInputMode('sheets')}
+            className={cn(
+              'px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1',
+              inputMode === 'sheets'
+                ? 'bg-primary-500 text-white'
+                : 'text-dark-400 hover:text-white'
+            )}
+          >
+            <FileText className="w-4 h-4" />
+            Import from Sheets
+          </button>
         </div>
+
+        {inputMode === 'sheets' ? (
+          <div className="mb-4">
+            <SheetInput
+              onPromptsLoaded={handleSheetPromptsLoaded}
+              onError={handleSheetError}
+            />
+            {sheetError && (
+              <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded">
+                {sheetError}
+              </div>
+            )}
+            {sheetPromptsLoaded && (
+              <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-400">
+                Prompts loaded from Google Sheet. You can review and edit them below.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between mb-4">
+            <label className="text-sm font-medium">
+              Questions ({currentQueryCount} / {questionCount})
+            </label>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={handleLoadSamples}
+                className="text-xs px-3 py-1.5 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
+              >
+                Load Samples
+              </button>
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="text-xs px-3 py-1.5 bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 rounded-md transition-colors flex items-center gap-1"
+              >
+                {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                AI Generate ({questionCount})
+              </button>
+            </div>
+          </div>
+        )}
 
         <textarea
           value={queriesText}
@@ -534,7 +623,9 @@ function QueryConfig({
         )}
 
         <p className="text-xs text-dark-400 mt-2">
-          Click &quot;AI Generate&quot; to create {questionCount} targeted questions using your brand context. You can edit the questions before running the analysis.
+          {inputMode === 'manual'
+            ? `Click "AI Generate" to create ${questionCount} targeted questions using your brand context. You can edit the questions before running the analysis.`
+            : 'Import prompts from your Google Sheet, then review and edit them as needed.'}
         </p>
 
         <div className="flex gap-3 mt-6">
@@ -588,6 +679,10 @@ function ProviderConfig({
   setOpenaiModel,
   geminiModel,
   setGeminiModel,
+  perplexityModel,
+  setPerplexityModel,
+  anthropicModel,
+  setAnthropicModel,
 }: {
   onNext: () => void;
   onBack: () => void;
@@ -603,6 +698,10 @@ function ProviderConfig({
   setOpenaiModel: (model: string) => void;
   geminiModel: string;
   setGeminiModel: (model: string) => void;
+  perplexityModel: string;
+  setPerplexityModel: (model: string) => void;
+  anthropicModel: string;
+  setAnthropicModel: (model: string) => void;
 }) {
   const toggleProvider = (provider: Provider) => {
     if (providers.includes(provider)) {
@@ -650,8 +749,15 @@ function ProviderConfig({
                     <div className="text-sm text-dark-400">
                       {provider.id === 'openai'
                         ? provider.models.find(m => m.id === openaiModel)?.name || openaiModel
-                        : provider.models.find(m => m.id === geminiModel)?.name || geminiModel}
+                        : provider.id === 'gemini'
+                        ? provider.models.find(m => m.id === geminiModel)?.name || geminiModel
+                        : provider.id === 'perplexity'
+                        ? provider.models.find(m => m.id === perplexityModel)?.name || perplexityModel
+                        : provider.models.find(m => m.id === anthropicModel)?.name || anthropicModel}
                     </div>
+                    {(provider as any).description && (
+                      <div className="text-xs text-dark-500 mt-0.5">{(provider as any).description}</div>
+                    )}
                   </div>
                   <div
                     className={cn(
@@ -671,12 +777,21 @@ function ProviderConfig({
                   <div className="ml-12 pl-4 border-l-2 border-primary-500/30">
                     <label className="block text-xs text-dark-400 mb-1">Select Model</label>
                     <select
-                      value={provider.id === 'openai' ? openaiModel : geminiModel}
+                      value={
+                        provider.id === 'openai' ? openaiModel :
+                        provider.id === 'gemini' ? geminiModel :
+                        provider.id === 'perplexity' ? perplexityModel :
+                        anthropicModel
+                      }
                       onChange={(e) => {
                         if (provider.id === 'openai') {
                           setOpenaiModel(e.target.value);
-                        } else {
+                        } else if (provider.id === 'gemini') {
                           setGeminiModel(e.target.value);
+                        } else if (provider.id === 'perplexity') {
+                          setPerplexityModel(e.target.value);
+                        } else {
+                          setAnthropicModel(e.target.value);
                         }
                       }}
                       className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -1028,13 +1143,15 @@ function ResultsView({
   results,
   brandName,
   onNewRun,
+  jobId,
 }: {
   results: RunResults;
   brandName: string;
   onNewRun: () => void;
+  jobId?: string;
 }) {
   const { summary } = results;
-  const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources' | 'report'>('overview');
   const [providerFilter, setProviderFilter] = useState<string>('all');
 
   const competitorStats = useMemo(() => {
@@ -1117,12 +1234,13 @@ function ResultsView({
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6 border-b border-dark-700 pb-2">
+      <div className="flex gap-2 mb-6 border-b border-dark-700 pb-2 overflow-x-auto">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'results', label: 'Detailed Results', icon: FileText },
           { id: 'competitors', label: 'Competitors', icon: Eye },
           { id: 'sources', label: 'Sources', icon: Link2 },
+          { id: 'report', label: 'AI Report', icon: Zap },
         ].map(tab => (
           <button
             key={tab.id}
@@ -1336,6 +1454,14 @@ function ResultsView({
         </div>
       )}
 
+      {activeTab === 'report' && (
+        <VisibilityReport
+          results={results}
+          brandName={brandName}
+          jobId={jobId}
+        />
+      )}
+
       <div className="flex justify-center gap-4 mt-8">
         <button
           onClick={onNewRun}
@@ -1372,6 +1498,8 @@ export default function DashboardPage() {
   const [language, setLanguage] = useState('de');
   const [openaiModel, setOpenaiModel] = useState('gpt-4.1-mini');
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
+  const [perplexityModel, setPerplexityModel] = useState('sonar');
+  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-20250514');
 
   // Run state
   const [isStarting, setIsStarting] = useState(false);
@@ -1439,6 +1567,8 @@ export default function DashboardPage() {
         providers,
         openaiModel,
         geminiModel,
+        perplexityModel,
+        anthropicModel,
         mode,
         queries,
         market,
@@ -1549,6 +1679,10 @@ export default function DashboardPage() {
               setOpenaiModel={setOpenaiModel}
               geminiModel={geminiModel}
               setGeminiModel={setGeminiModel}
+              perplexityModel={perplexityModel}
+              setPerplexityModel={setPerplexityModel}
+              anthropicModel={anthropicModel}
+              setAnthropicModel={setAnthropicModel}
               onNext={() => setStep(2)}
               onBack={() => setStep(0)}
             />
@@ -1581,6 +1715,7 @@ export default function DashboardPage() {
               results={results}
               brandName={companyData.brandName}
               onNewRun={handleNewRun}
+              jobId={jobId || undefined}
             />
           )}
         </AnimatePresence>

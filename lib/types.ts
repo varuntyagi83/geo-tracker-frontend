@@ -1,7 +1,7 @@
 // lib/types.ts
 // Type definitions for the GEO Tracker application
 
-export type Provider = 'openai' | 'gemini';
+export type Provider = 'openai' | 'gemini' | 'perplexity' | 'anthropic';
 export type Mode = 'internal' | 'provider_web';
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
@@ -29,6 +29,8 @@ export interface RunConfig {
   providers: Provider[];
   openaiModel?: string;
   geminiModel?: string;
+  perplexityModel?: string;
+  anthropicModel?: string;
   mode: Mode;
   queries: Query[];
   market?: string;
@@ -134,4 +136,50 @@ export interface RunConfigFormData {
   market: string;
   lang: string;
   queriesText: string;
+}
+
+// Google Sheets types
+export interface SheetPrompt {
+  promptId: string;
+  category: string;
+  question: string;
+}
+
+export interface SheetFetchResponse {
+  prompts: SheetPrompt[];
+  totalCount: number;
+  columnsDetected: {
+    question: string | null;
+    category: string | null;
+  };
+  allColumns: string[];
+  cached: boolean;
+  sheetTitle: string;
+  sheetId: string;
+}
+
+export interface SheetValidateResponse {
+  valid: boolean;
+  sheetId?: string;
+  sheetTitle?: string;
+  totalPrompts?: number;
+  columns?: string[];
+  columnsDetected?: {
+    question: string | null;
+    category: string | null;
+  };
+  error?: string;
+}
+
+// Visibility Report types
+export interface VisibilityReport {
+  report: string;
+  generatedAt: string;
+  provider: string;
+  model: string;
+  tokensUsed: number;
+  brandName?: string;
+  saved?: boolean;
+  fromCache?: boolean;
+  error?: string;
 }
