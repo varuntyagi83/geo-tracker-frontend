@@ -11,6 +11,10 @@ import type {
   SheetFetchResponse,
   SheetValidateResponse,
   VisibilityReport,
+  Brand,
+  BrandRun,
+  BrandListResponse,
+  BrandDetailResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -340,6 +344,119 @@ export async function getCachedReport(jobId: string): Promise<VisibilityReport |
     }
     throw error;
   }
+}
+
+// Brand History API
+export async function getBrands(companyId?: string, limit: number = 50): Promise<BrandListResponse> {
+  const params = new URLSearchParams({ limit: limit.toString() });
+  if (companyId) {
+    params.append('company_id', companyId);
+  }
+
+  const response = await fetchAPI<any>(`/api/brands?${params}`);
+
+  return {
+    brands: response.brands.map((b: any) => ({
+      id: b.id,
+      brandName: b.brand_name,
+      industry: b.industry,
+      market: b.market,
+      companyId: b.company_id,
+      totalRuns: b.total_runs,
+      totalQueries: b.total_queries,
+      avgVisibility: b.avg_visibility,
+      createdAt: b.created_at,
+      lastRunAt: b.last_run_at,
+    })),
+    count: response.count,
+  };
+}
+
+export async function getBrandById(brandId: number): Promise<BrandDetailResponse> {
+  const response = await fetchAPI<any>(`/api/brands/${brandId}`);
+
+  return {
+    brand: {
+      id: response.brand.id,
+      brandName: response.brand.brand_name,
+      industry: response.brand.industry,
+      market: response.brand.market,
+      companyId: response.brand.company_id,
+      totalRuns: response.brand.total_runs,
+      totalQueries: response.brand.total_queries,
+      avgVisibility: response.brand.avg_visibility,
+      createdAt: response.brand.created_at,
+      lastRunAt: response.brand.last_run_at,
+    },
+    history: response.history.map((r: any) => ({
+      id: r.id,
+      brandId: r.brand_id,
+      jobId: r.job_id,
+      providers: r.providers,
+      mode: r.mode,
+      totalQueries: r.total_queries,
+      visibilityPct: r.visibility_pct,
+      avgSentiment: r.avg_sentiment,
+      avgTrust: r.avg_trust,
+      competitorSummary: r.competitor_summary,
+      createdAt: r.created_at,
+    })),
+  };
+}
+
+export async function searchBrandByName(brandName: string, companyId?: string): Promise<Brand | null> {
+  const params = new URLSearchParams();
+  if (companyId) {
+    params.append('company_id', companyId);
+  }
+
+  try {
+    const response = await fetchAPI<any>(`/api/brands/search/${encodeURIComponent(brandName)}?${params}`);
+
+    if (!response.brand) return null;
+
+    return {
+      id: response.brand.id,
+      brandName: response.brand.brand_name,
+      industry: response.brand.industry,
+      market: response.brand.market,
+      companyId: response.brand.company_id,
+      totalRuns: response.brand.total_runs,
+      totalQueries: response.brand.total_queries,
+      avgVisibility: response.brand.avg_visibility,
+      createdAt: response.brand.created_at,
+      lastRunAt: response.brand.last_run_at,
+    };
+  } catch (error) {
+    if (error instanceof APIError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function getBrandHistory(brandId: number, limit: number = 20): Promise<BrandRun[]> {
+  const response = await fetchAPI<any>(`/api/brands/${brandId}/history?limit=${limit}`);
+
+  return response.history.map((r: any) => ({
+    id: r.id,
+    brandId: r.brand_id,
+    jobId: r.job_id,
+    providers: r.providers,
+    mode: r.mode,
+    totalQueries: r.total_queries,
+    visibilityPct: r.visibility_pct,
+    avgSentiment: r.avg_sentiment,
+    avgTrust: r.avg_trust,
+    competitorSummary: r.competitor_summary,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function deleteBrand(brandId: number): Promise<{ success: boolean; message: string }> {
+  return fetchAPI<{ success: boolean; message: string }>(`/api/brands/${brandId}`, {
+    method: 'DELETE',
+  });
 }
 
 export { APIError };

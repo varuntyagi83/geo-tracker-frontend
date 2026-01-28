@@ -51,9 +51,11 @@ import type {
   Mode,
   Source,
   SheetPrompt,
+  Brand,
 } from '@/lib/types';
 import { SheetInput } from '@/components/SheetInput';
 import { VisibilityReport } from '@/components/VisibilityReport';
+import { BrandHistory } from '@/components/BrandHistory';
 import {
   cn,
   formatDuration,
@@ -1151,7 +1153,7 @@ function ResultsView({
   jobId?: string;
 }) {
   const { summary } = results;
-  const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources' | 'report'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources' | 'report' | 'history'>('overview');
   const [providerFilter, setProviderFilter] = useState<string>('all');
 
   const competitorStats = useMemo(() => {
@@ -1241,6 +1243,7 @@ function ResultsView({
           { id: 'competitors', label: 'Competitors', icon: Eye },
           { id: 'sources', label: 'Sources', icon: Link2 },
           { id: 'report', label: 'AI Report', icon: Zap },
+          { id: 'history', label: 'Brand History', icon: Clock },
         ].map(tab => (
           <button
             key={tab.id}
@@ -1460,6 +1463,10 @@ function ResultsView({
           brandName={brandName}
           jobId={jobId}
         />
+      )}
+
+      {activeTab === 'history' && (
+        <BrandHistory companyId="demo-company" />
       )}
 
       <div className="flex justify-center gap-4 mt-8">

@@ -183,3 +183,41 @@ export interface VisibilityReport {
   fromCache?: boolean;
   error?: string;
 }
+
+// Brand History types
+export interface Brand {
+  id: number;
+  brandName: string;
+  industry: string;
+  market: string;
+  companyId: string;
+  totalRuns: number;
+  totalQueries: number;
+  avgVisibility: number;
+  createdAt: string;
+  lastRunAt: string;
+}
+
+export interface BrandRun {
+  id: number;
+  brandId: number;
+  jobId: string;
+  providers: string[];
+  mode: string;
+  totalQueries: number;
+  visibilityPct: number;
+  avgSentiment: number;
+  avgTrust: number;
+  competitorSummary: Record<string, number>;
+  createdAt: string;
+}
+
+export interface BrandListResponse {
+  brands: Brand[];
+  count: number;
+}
+
+export interface BrandDetailResponse {
+  brand: Brand;
+  history: BrandRun[];
+}
