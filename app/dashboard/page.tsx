@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1515,6 +1515,9 @@ export default function DashboardPage() {
   const [results, setResults] = useState<RunResults | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Ref to prevent double-submission
+  const isSubmittingRef = useRef(false);
+
   const steps = ['Brand Setup', 'Configure', 'Queries', 'Results'];
 
   // Redirect if not authenticated
@@ -1563,6 +1566,20 @@ export default function DashboardPage() {
   }, [jobId, step]);
 
   const handleStartRun = async (parsedQueries: Query[]) => {
+    // Prevent double-submission using ref (works across re-renders)
+    if (isSubmittingRef.current) {
+      console.log('[handleStartRun] Already submitting, ignoring click');
+      return;
+    }
+
+    // Check if queries are valid
+    if (!parsedQueries || parsedQueries.length === 0) {
+      console.log('[handleStartRun] No queries provided');
+      setError('No queries to analyze. Please add at least one question.');
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setIsStarting(true);
     setError(null);
 
@@ -1582,12 +1599,16 @@ export default function DashboardPage() {
         lang: language,
       };
 
+      console.log('[handleStartRun] Starting run with', parsedQueries.length, 'queries');
       const response = await startRun(config);
+      console.log('[handleStartRun] Run started:', response.jobId);
       setJobId(response.jobId);
       setStep(3);
     } catch (err) {
+      console.error('[handleStartRun] Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to start run');
     } finally {
+      isSubmittingRef.current = false;
       setIsStarting(false);
     }
   };
