@@ -891,51 +891,73 @@ function OptimizationSection() {
 function PricingSection() {
   const plans = [
     {
-      name: 'Audit',
-      price: '2,500',
-      period: 'one-time',
-      description: 'One-time baseline report',
+      name: 'Starter',
+      price: '0',
+      period: '',
+      description: 'Try GEO tracking for free',
       features: [
-        'Comprehensive AI visibility audit',
-        '100 industry-specific queries',
-        'Competitor analysis',
-        'Baseline report & recommendations',
-        'Single-point measurement',
+        '25 queries per month',
+        '2 LLM providers',
+        'Basic visibility score',
+        'Community support',
+        '7-day data retention',
       ],
-      cta: 'Get Started',
+      cta: 'Start Free',
       highlighted: false,
     },
     {
-      name: 'Track',
-      price: '1,500',
+      name: 'Pro',
+      price: '99',
       period: '/month',
-      description: 'Monthly monitoring + reports',
+      description: 'For growing businesses',
       features: [
-        'Everything in Audit',
-        'Weekly AI visibility tracking',
-        '200 queries across 4 LLMs',
-        'Monthly reports & trends',
-        'Competitor benchmarking',
-        'Email alerts on changes',
+        '200 queries per month',
+        'All 4 LLM providers',
+        'Weekly tracking & reports',
+        'Competitor monitoring (3)',
+        'Email alerts',
+        '90-day data retention',
       ],
-      cta: 'Start Tracking',
+      cta: 'Start Pro Trial',
       highlighted: true,
     },
     {
-      name: 'Optimize',
-      price: '4,000',
+      name: 'Business',
+      price: '299',
       period: '/month',
-      description: 'Full-service tracking + optimization',
+      description: 'For teams & agencies',
       features: [
-        'Everything in Track',
-        'Custom optimization strategy',
-        'Content recommendations',
-        'Citation building guidance',
-        'Monthly strategy calls',
+        '1,000 queries per month',
+        'All 4 LLM providers',
+        'Daily tracking & reports',
+        'Unlimited competitors',
+        'AI optimization recommendations',
+        'API access',
+        '1-year data retention',
         'Priority support',
       ],
-      cta: 'Get Optimized',
+      cta: 'Start Business Trial',
       highlighted: false,
+    },
+    {
+      name: 'Enterprise',
+      price: '2,499',
+      period: 'one-time',
+      description: 'Full AEO audit & strategy',
+      features: [
+        'Comprehensive AI visibility audit',
+        'Custom query library (500+ queries)',
+        'Deep competitor analysis',
+        'Full AEO strategy development',
+        'Content optimization roadmap',
+        'Citation building plan',
+        'Knowledge graph recommendations',
+        '90-day implementation guide',
+        'Strategy presentation call',
+      ],
+      cta: 'Get Your Strategy',
+      highlighted: false,
+      isEnterprise: true,
     },
   ];
 
@@ -949,7 +971,7 @@ function PricingSection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -958,35 +980,42 @@ function PricingSection() {
               transition={{ delay: index * 0.1 }}
               viewport={{ once: true }}
               className={cn(
-                'rounded-2xl p-8 border',
+                'rounded-2xl p-6 border',
                 plan.highlighted
                   ? 'bg-gradient-to-b from-primary-500/10 to-transparent border-primary-500/50'
+                  : 'isEnterprise' in plan && plan.isEnterprise
+                  ? 'bg-gradient-to-b from-secondary/10 to-transparent border-secondary/50'
                   : 'bg-dark-800 border-dark-700'
               )}
             >
               {plan.highlighted && (
                 <div className="text-xs text-primary-400 font-medium mb-4">MOST POPULAR</div>
               )}
-              <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+              {'isEnterprise' in plan && plan.isEnterprise && (
+                <div className="text-xs text-secondary font-medium mb-4">FULL SERVICE</div>
+              )}
+              <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
               <div className="mb-4">
-                <span className="text-4xl font-bold">&euro;{plan.price}</span>
-                <span className="text-dark-400">{plan.period}</span>
+                <span className="text-3xl font-bold">&euro;{plan.price}</span>
+                <span className="text-dark-400 text-sm">{plan.period}</span>
               </div>
-              <p className="text-dark-400 mb-6">{plan.description}</p>
-              <ul className="space-y-3 mb-8">
+              <p className="text-dark-400 text-sm mb-6">{plan.description}</p>
+              <ul className="space-y-2 mb-6">
                 {plan.features.map(feature => (
                   <li key={feature} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-dark-300">{feature}</span>
+                    <CheckCircle2 className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
+                    <span className="text-xs text-dark-300">{feature}</span>
                   </li>
                 ))}
               </ul>
               <Link
-                href="/signup"
+                href={'isEnterprise' in plan && plan.isEnterprise ? '/contact' : '/signup'}
                 className={cn(
-                  'block w-full py-3 rounded-lg font-medium text-center transition-colors',
+                  'block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm',
                   plan.highlighted
                     ? 'bg-primary-500 hover:bg-primary-600 text-white'
+                    : 'isEnterprise' in plan && plan.isEnterprise
+                    ? 'bg-secondary hover:bg-secondary/90 text-dark-900'
                     : 'bg-dark-700 hover:bg-dark-600 text-white'
                 )}
               >
