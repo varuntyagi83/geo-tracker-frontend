@@ -184,6 +184,12 @@ function Navigation() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
+            <Link
+              href="/admin"
+              className="text-sm text-dark-400 hover:text-white transition-colors"
+            >
+              Admin
+            </Link>
             {user ? (
               <Link
                 href="/dashboard"
@@ -238,6 +244,13 @@ function Navigation() {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-dark-700">
+                <Link
+                  href="/admin"
+                  className="px-4 py-2 border border-dark-600 rounded-lg text-sm font-medium text-center hover:bg-dark-800 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Admin
+                </Link>
                 {user ? (
                   <Link
                     href="/dashboard"
