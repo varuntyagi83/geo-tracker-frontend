@@ -401,14 +401,14 @@ export async function getBrandById(brandId: number): Promise<BrandDetailResponse
       id: r.id,
       brandId: r.brand_id,
       jobId: r.job_id,
-      providers: r.providers,
+      providers: r.providers || [],
       mode: r.mode,
       totalQueries: r.total_queries,
       visibilityPct: r.visibility_pct,
       avgSentiment: r.avg_sentiment,
       avgTrust: r.avg_trust,
-      competitorSummary: r.competitor_summary,
-      createdAt: r.created_at,
+      competitorSummary: r.competitor_summary || {},
+      createdAt: r.run_at,  // Backend returns run_at, not created_at
     })),
   };
 }
