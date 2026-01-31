@@ -939,27 +939,45 @@ function PricingSection() {
       cta: 'Start Business Trial',
       highlighted: false,
     },
-    {
-      name: 'Enterprise',
+  ];
+
+  // Enterprise services - separate from SaaS plans
+  const enterpriseServices = {
+    audit: {
+      name: 'AEO Audit',
       price: '2,499',
       period: 'one-time',
-      description: 'Full AEO audit & strategy',
+      description: 'Comprehensive visibility assessment',
       features: [
-        'Comprehensive AI visibility audit',
+        'Full AI visibility audit across all LLMs',
         'Custom query library (500+ queries)',
         'Deep competitor analysis',
-        'Full AEO strategy development',
-        'Content optimization roadmap',
-        'Citation building plan',
-        'Knowledge graph recommendations',
-        '90-day implementation guide',
+        'Content gap identification',
+        'Citation & knowledge graph audit',
+        'Detailed report & recommendations',
         'Strategy presentation call',
       ],
-      cta: 'Get Your Strategy',
-      highlighted: false,
-      isEnterprise: true,
+      cta: 'Get Your Audit',
     },
-  ];
+    management: {
+      name: 'AEO Management',
+      price: '1,499',
+      period: '/month',
+      description: 'Ongoing optimization & growth',
+      features: [
+        'Everything in AEO Audit',
+        'Monthly strategy execution',
+        'Content optimization implementation',
+        'Citation building campaigns',
+        'Knowledge graph management',
+        'Weekly progress reports',
+        'Dedicated AEO specialist',
+        'Quarterly strategy reviews',
+      ],
+      cta: 'Start AEO Management',
+      recommended: true,
+    },
+  };
 
   return (
     <Section id="pricing" className="py-24">
@@ -967,41 +985,95 @@ function PricingSection() {
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
           <p className="text-xl text-dark-400 max-w-2xl mx-auto">
-            Choose the plan that fits your needs
+            Choose between self-service tracking or full-service AEO optimization
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
+        {/* SaaS Plans */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-dark-800 border border-dark-700 rounded-full text-sm text-dark-300">
+              <BarChart3 className="w-4 h-4" />
+              Self-Service Tracking Platform
+            </div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {plans.map((plan, index) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className={cn(
+                  'rounded-2xl p-6 border',
+                  plan.highlighted
+                    ? 'bg-gradient-to-b from-primary-500/10 to-transparent border-primary-500/50'
+                    : 'bg-dark-800 border-dark-700'
+                )}
+              >
+                {plan.highlighted && (
+                  <div className="text-xs text-primary-400 font-medium mb-4">MOST POPULAR</div>
+                )}
+                <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                <div className="mb-4">
+                  <span className="text-3xl font-bold">&euro;{plan.price}</span>
+                  <span className="text-dark-400 text-sm">{plan.period}</span>
+                </div>
+                <p className="text-dark-400 text-sm mb-6">{plan.description}</p>
+                <ul className="space-y-2 mb-6">
+                  {plan.features.map(feature => (
+                    <li key={feature} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
+                      <span className="text-xs text-dark-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/signup"
+                  className={cn(
+                    'block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm',
+                    plan.highlighted
+                      ? 'bg-primary-500 hover:bg-primary-600 text-white'
+                      : 'bg-dark-700 hover:bg-dark-600 text-white'
+                  )}
+                >
+                  {plan.cta}
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Enterprise Services */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-secondary/20 to-primary-500/20 border border-secondary/30 rounded-full text-sm text-secondary">
+              <Zap className="w-4 h-4" />
+              Full-Service AEO Optimization
+            </div>
+            <p className="text-dark-400 mt-4 max-w-xl mx-auto">
+              Let our experts handle your AI visibility strategy while you focus on your business
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* AEO Audit */}
             <motion.div
-              key={plan.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: 0.1 }}
               viewport={{ once: true }}
-              className={cn(
-                'rounded-2xl p-6 border',
-                plan.highlighted
-                  ? 'bg-gradient-to-b from-primary-500/10 to-transparent border-primary-500/50'
-                  : 'isEnterprise' in plan && plan.isEnterprise
-                  ? 'bg-gradient-to-b from-secondary/10 to-transparent border-secondary/50'
-                  : 'bg-dark-800 border-dark-700'
-              )}
+              className="rounded-2xl p-6 border bg-dark-800 border-dark-700"
             >
-              {plan.highlighted && (
-                <div className="text-xs text-primary-400 font-medium mb-4">MOST POPULAR</div>
-              )}
-              {'isEnterprise' in plan && plan.isEnterprise && (
-                <div className="text-xs text-secondary font-medium mb-4">FULL SERVICE</div>
-              )}
-              <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+              <div className="text-xs text-orange-400 font-medium mb-4">ONE-TIME</div>
+              <h3 className="text-xl font-bold mb-2">{enterpriseServices.audit.name}</h3>
               <div className="mb-4">
-                <span className="text-3xl font-bold">&euro;{plan.price}</span>
-                <span className="text-dark-400 text-sm">{plan.period}</span>
+                <span className="text-3xl font-bold">&euro;{enterpriseServices.audit.price}</span>
+                <span className="text-dark-400 text-sm"> {enterpriseServices.audit.period}</span>
               </div>
-              <p className="text-dark-400 text-sm mb-6">{plan.description}</p>
+              <p className="text-dark-400 text-sm mb-6">{enterpriseServices.audit.description}</p>
               <ul className="space-y-2 mb-6">
-                {plan.features.map(feature => (
+                {enterpriseServices.audit.features.map(feature => (
                   <li key={feature} className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
                     <span className="text-xs text-dark-300">{feature}</span>
@@ -1009,20 +1081,49 @@ function PricingSection() {
                 ))}
               </ul>
               <Link
-                href={'isEnterprise' in plan && plan.isEnterprise ? '/contact' : '/signup'}
-                className={cn(
-                  'block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm',
-                  plan.highlighted
-                    ? 'bg-primary-500 hover:bg-primary-600 text-white'
-                    : 'isEnterprise' in plan && plan.isEnterprise
-                    ? 'bg-secondary hover:bg-secondary/90 text-dark-900'
-                    : 'bg-dark-700 hover:bg-dark-600 text-white'
-                )}
+                href="/contact"
+                className="block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm bg-dark-700 hover:bg-dark-600 text-white"
               >
-                {plan.cta}
+                {enterpriseServices.audit.cta}
               </Link>
             </motion.div>
-          ))}
+
+            {/* AEO Management */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              viewport={{ once: true }}
+              className="rounded-2xl p-6 border bg-gradient-to-b from-secondary/10 to-transparent border-secondary/50 relative"
+            >
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="px-3 py-1 bg-secondary text-dark-900 text-xs font-bold rounded-full">
+                  RECOMMENDED
+                </span>
+              </div>
+              <div className="text-xs text-secondary font-medium mb-4">SUBSCRIPTION</div>
+              <h3 className="text-xl font-bold mb-2">{enterpriseServices.management.name}</h3>
+              <div className="mb-4">
+                <span className="text-3xl font-bold">&euro;{enterpriseServices.management.price}</span>
+                <span className="text-dark-400 text-sm">{enterpriseServices.management.period}</span>
+              </div>
+              <p className="text-dark-400 text-sm mb-6">{enterpriseServices.management.description}</p>
+              <ul className="space-y-2 mb-6">
+                {enterpriseServices.management.features.map(feature => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
+                    <span className="text-xs text-dark-300">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/contact"
+                className="block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm bg-secondary hover:bg-secondary/90 text-dark-900"
+              >
+                {enterpriseServices.management.cta}
+              </Link>
+            </motion.div>
+          </div>
         </div>
       </div>
     </Section>
