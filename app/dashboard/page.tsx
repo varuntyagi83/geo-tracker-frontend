@@ -1469,7 +1469,7 @@ function ResultsView({
       )}
 
       {activeTab === 'history' && (
-        <BrandHistory companyId="demo-company" />
+        <BrandHistory companyId="demo-company" filterBrandName={brandName} />
       )}
 
       <div className="flex justify-center gap-4 mt-8">

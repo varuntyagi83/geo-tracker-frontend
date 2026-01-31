@@ -7,10 +7,11 @@ import type { Brand, BrandRun } from '@/lib/types';
 
 interface BrandHistoryProps {
   companyId?: string;
+  filterBrandName?: string;  // If provided, only show this brand's history
   onSelectBrand?: (brand: Brand) => void;
 }
 
-export function BrandHistory({ companyId, onSelectBrand }: BrandHistoryProps) {
+export function BrandHistory({ companyId, filterBrandName, onSelectBrand }: BrandHistoryProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
   const [history, setHistory] = useState<BrandRun[]>([]);
@@ -21,14 +22,31 @@ export function BrandHistory({ companyId, onSelectBrand }: BrandHistoryProps) {
   // Load brands on mount
   useEffect(() => {
     loadBrands();
-  }, [companyId]);
+  }, [companyId, filterBrandName]);
 
   const loadBrands = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await getBrands(companyId, 50);
-      setBrands(response.brands);
+      let brandsToShow = response.brands;
+
+      // If filterBrandName is provided, filter to only that brand
+      if (filterBrandName) {
+        brandsToShow = response.brands.filter(
+          (b) => b.brandName.toLowerCase() === filterBrandName.toLowerCase()
+        );
+        // Auto-select the filtered brand
+        if (brandsToShow.length > 0) {
+          setBrands(brandsToShow);
+          // Trigger auto-selection after setting brands
+          setTimeout(() => handleSelectBrand(brandsToShow[0]), 0);
+        } else {
+          setBrands([]);
+        }
+      } else {
+        setBrands(brandsToShow);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load brands');
     } finally {
