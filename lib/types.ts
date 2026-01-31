@@ -221,3 +221,26 @@ export interface BrandDetailResponse {
   brand: Brand;
   history: BrandRun[];
 }
+
+// Previous Runs History types
+export interface RunHistorySummary {
+  runTs: string;
+  brandName: string;
+  providers: string[];
+  models: string[];
+  mode: string;
+  market: string;
+  lang: string;
+  totalQueries: number;
+  brandMentions: number;
+  visibilityPct: number;
+  avgSentiment: number | null;
+  avgTrust: number | null;
+  avgLatencyMs: number | null;
+  companyId: string | null;
+}
+
+export interface RunHistoryResponse {
+  runs: RunHistorySummary[];
+  count: number;
+}

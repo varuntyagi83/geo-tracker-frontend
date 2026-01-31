@@ -32,6 +32,8 @@ import {
   Globe2,
   LogOut,
   User,
+  History,
+  PlusCircle,
 } from 'lucide-react';
 
 import {
@@ -56,6 +58,7 @@ import type {
 import { SheetInput } from '@/components/SheetInput';
 import { VisibilityReport } from '@/components/VisibilityReport';
 import { BrandHistory } from '@/components/BrandHistory';
+import { PreviousRuns } from '@/components/PreviousRuns';
 import {
   cn,
   formatDuration,
@@ -1508,6 +1511,9 @@ export default function DashboardPage() {
   const [perplexityModel, setPerplexityModel] = useState('sonar');
   const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-20250514');
 
+  // Main view mode: 'history' shows previous runs, 'new' shows the new analysis flow
+  const [viewMode, setViewMode] = useState<'history' | 'new'>('history');
+
   // Run state
   const [isStarting, setIsStarting] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -1615,6 +1621,7 @@ export default function DashboardPage() {
 
   const handleNewRun = () => {
     setStep(0);
+    setViewMode('new');  // Switch to new analysis mode
     setCompanyData({
       brandName: '',
       industry: '',
@@ -1668,6 +1675,36 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Main View Toggle - show only when not in active run */}
+        {step < 3 && (
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <button
+              onClick={() => setViewMode('history')}
+              className={cn(
+                'flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all',
+                viewMode === 'history'
+                  ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                  : 'bg-dark-800 text-dark-400 hover:bg-dark-700 hover:text-white border border-dark-700'
+              )}
+            >
+              <History className="w-5 h-5" />
+              Previous Runs
+            </button>
+            <button
+              onClick={() => setViewMode('new')}
+              className={cn(
+                'flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all',
+                viewMode === 'new'
+                  ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                  : 'bg-dark-800 text-dark-400 hover:bg-dark-700 hover:text-white border border-dark-700'
+              )}
+            >
+              <PlusCircle className="w-5 h-5" />
+              New Analysis
+            </button>
+          </div>
+        )}
+
         {/* Error display */}
         {error && (
           <div className="max-w-xl mx-auto mb-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
@@ -1678,12 +1715,24 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Step indicator (hide on results) */}
-        {step < 3 && <StepIndicator currentStep={step} steps={steps} />}
+        {/* Previous Runs View */}
+        {viewMode === 'history' && step < 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-6xl mx-auto"
+          >
+            <PreviousRuns companyId="demo-company" />
+          </motion.div>
+        )}
 
-        {/* Step content */}
+        {/* New Analysis Flow */}
+        {viewMode === 'new' && step < 3 && <StepIndicator currentStep={step} steps={steps} />}
+
+        {/* Step content - only show when in 'new' mode or during active run */}
         <AnimatePresence mode="wait">
-          {step === 0 && (
+          {viewMode === 'new' && step === 0 && (
             <CompanySetup
               key="company"
               formData={companyData}
@@ -1692,7 +1741,7 @@ export default function DashboardPage() {
             />
           )}
 
-          {step === 1 && (
+          {viewMode === 'new' && step === 1 && (
             <ProviderConfig
               key="providers"
               providers={providers}
@@ -1716,7 +1765,7 @@ export default function DashboardPage() {
             />
           )}
 
-          {step === 2 && (
+          {viewMode === 'new' && step === 2 && (
             <QueryConfig
               key="queries"
               queries={queries}

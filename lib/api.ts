@@ -15,6 +15,8 @@ import type {
   BrandRun,
   BrandListResponse,
   BrandDetailResponse,
+  RunHistorySummary,
+  RunHistoryResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -464,6 +466,43 @@ export async function deleteBrand(brandId: number): Promise<{ success: boolean; 
   return fetchAPI<{ success: boolean; message: string }>(`/api/brands/${brandId}`, {
     method: 'DELETE',
   });
+}
+
+// Previous Runs History
+export async function getRunHistory(
+  companyId?: string,
+  limit: number = 50,
+  sinceDays: number = 30
+): Promise<RunHistoryResponse> {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    since_days: sinceDays.toString(),
+  });
+  if (companyId) {
+    params.append('company_id', companyId);
+  }
+
+  const response = await fetchAPI<any>(`/api/runs/history?${params}`);
+
+  return {
+    runs: response.runs.map((r: any) => ({
+      runTs: r.run_ts,
+      brandName: r.brand_name,
+      providers: r.providers || [],
+      models: r.models || [],
+      mode: r.mode,
+      market: r.market,
+      lang: r.lang,
+      totalQueries: r.total_queries,
+      brandMentions: r.brand_mentions,
+      visibilityPct: r.visibility_pct,
+      avgSentiment: r.avg_sentiment,
+      avgTrust: r.avg_trust,
+      avgLatencyMs: r.avg_latency_ms,
+      companyId: r.company_id,
+    })),
+    count: response.count,
+  };
 }
 
 export { APIError };
