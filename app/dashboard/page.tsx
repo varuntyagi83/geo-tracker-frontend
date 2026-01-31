@@ -389,7 +389,7 @@ function QueryConfig({
   market,
   isStarting,
 }: {
-  onStart: () => void;
+  onStart: (queries: Query[]) => void;
   onBack: () => void;
   queries: Query[];
   setQueries: (queries: Query[]) => void;
@@ -511,7 +511,7 @@ function QueryConfig({
   const handleStartAnalysis = () => {
     const parsed = parseQueriesFromText(queriesText);
     setQueries(parsed);
-    onStart();
+    onStart(parsed);  // Pass parsed queries directly to avoid async state issue
   };
 
   const currentQueryCount = queriesText.split('\n').filter((l) => l.trim()).length;
@@ -1562,7 +1562,7 @@ export default function DashboardPage() {
     return () => clearInterval(pollInterval);
   }, [jobId, step]);
 
-  const handleStartRun = async () => {
+  const handleStartRun = async (parsedQueries: Query[]) => {
     setIsStarting(true);
     setError(null);
 
@@ -1577,7 +1577,7 @@ export default function DashboardPage() {
         perplexityModel,
         anthropicModel,
         mode,
-        queries,
+        queries: parsedQueries,  // Use passed queries instead of state
         market,
         lang: language,
       };
