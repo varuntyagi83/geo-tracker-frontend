@@ -1080,12 +1080,12 @@ function PricingSection() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/contact"
+              <a
+                href="#contact"
                 className="block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm bg-dark-700 hover:bg-dark-600 text-white"
               >
                 {enterpriseServices.audit.cta}
-              </Link>
+              </a>
             </motion.div>
 
             {/* AEO Management */}
@@ -1116,12 +1116,12 @@ function PricingSection() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/contact"
+              <a
+                href="#contact"
                 className="block w-full py-3 rounded-lg font-medium text-center transition-colors text-sm bg-secondary hover:bg-secondary/90 text-dark-900"
               >
                 {enterpriseServices.management.cta}
-              </Link>
+              </a>
             </motion.div>
           </div>
         </div>
