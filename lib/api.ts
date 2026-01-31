@@ -504,4 +504,150 @@ export async function getRunHistory(
   };
 }
 
+// ============================================
+// USER AUTHENTICATION
+// ============================================
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string;
+  company?: string;
+  created_at?: string;
+  last_login?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token: string;
+  user: AuthUser;
+  expires_in: number;
+  message?: string;
+}
+
+export interface AuthVerifyResponse {
+  valid: boolean;
+  user: AuthUser;
+  expires_at: string;
+}
+
+// Store token in localStorage
+const AUTH_TOKEN_KEY = 'geo_tracker_token';
+
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token: string | null): void {
+  if (typeof window === 'undefined') return;
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+}
+
+// Create authenticated fetch wrapper
+async function fetchAPIAuth<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = getAuthToken();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new APIError(
+      response.status,
+      errorData.detail || errorData.error || `API error: ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+// Signup a new user
+export async function signupUser(
+  email: string,
+  password: string,
+  name: string,
+  company?: string
+): Promise<AuthResponse> {
+  const response = await fetchAPI<AuthResponse>('/api/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, name, company }),
+  });
+
+  // Store token on successful signup
+  if (response.token) {
+    setAuthToken(response.token);
+  }
+
+  return response;
+}
+
+// Login user
+export async function loginUser(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const response = await fetchAPI<AuthResponse>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+
+  // Store token on successful login
+  if (response.token) {
+    setAuthToken(response.token);
+  }
+
+  return response;
+}
+
+// Get current user info
+export async function getCurrentUser(): Promise<{ success: boolean; user: AuthUser }> {
+  return fetchAPIAuth<{ success: boolean; user: AuthUser }>('/api/auth/me');
+}
+
+// Verify token validity
+export async function verifyAuthToken(): Promise<AuthVerifyResponse> {
+  return fetchAPIAuth<AuthVerifyResponse>('/api/auth/verify', {
+    method: 'POST',
+  });
+}
+
+// Update user profile
+export async function updateUserProfile(
+  name?: string,
+  company?: string
+): Promise<{ success: boolean; message: string; user: AuthUser }> {
+  return fetchAPIAuth<{ success: boolean; message: string; user: AuthUser }>(
+    '/api/auth/profile',
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ name, company }),
+    }
+  );
+}
+
+// Logout user (clear token)
+export function logoutUser(): void {
+  setAuthToken(null);
+}
+
 export { APIError };
