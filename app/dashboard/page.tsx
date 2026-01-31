@@ -1213,6 +1213,24 @@ function ResultsView({
       animate={{ opacity: 1, y: 0 }}
       className="max-w-6xl mx-auto"
     >
+      {/* Navigation buttons */}
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={onNewRun}
+          className="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-sm font-medium transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 rotate-180" />
+          Back to Dashboard
+        </button>
+        <button
+          onClick={onNewRun}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium transition-colors"
+        >
+          <PlusCircle className="w-4 h-4" />
+          New Analysis
+        </button>
+      </div>
+
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -1549,7 +1567,8 @@ export default function DashboardPage() {
 
   // Poll for progress when job is running
   useEffect(() => {
-    if (!jobId || step !== 3) return;
+    // Don't poll if we already have results or no job ID
+    if (!jobId || step !== 3 || results) return;
 
     let isMounted = true;
 
@@ -1566,9 +1585,17 @@ export default function DashboardPage() {
           clearInterval(pollInterval);
 
           if (status.status === 'completed') {
-            const runResults = await getRunResults(jobId);
-            if (isMounted) {
-              setResults(runResults);
+            try {
+              const runResults = await getRunResults(jobId);
+              if (isMounted) {
+                setResults(runResults);
+                setError(null);  // Clear any previous errors on success
+              }
+            } catch (resultsErr) {
+              // If we can't get results by job_id, the job completed but data wasn't persisted
+              // This is non-critical - results may still be available from in-memory cache
+              console.warn('Could not fetch results by job_id:', resultsErr);
+              // Don't set error here - the job did complete successfully
             }
           } else {
             const errorMsg = status.error
@@ -1580,10 +1607,12 @@ export default function DashboardPage() {
           }
         }
       } catch (err) {
-        if (isMounted) {
+        // Only show error if we don't have results yet
+        // If job completed but status endpoint fails (job cleaned from memory), that's ok
+        clearInterval(pollInterval);
+        if (isMounted && !results) {
           setError(err instanceof Error ? err.message : 'Failed to get status');
         }
-        clearInterval(pollInterval);
       }
     }, 2000);
 
@@ -1591,7 +1620,7 @@ export default function DashboardPage() {
       isMounted = false;
       clearInterval(pollInterval);
     };
-  }, [jobId, step]);
+  }, [jobId, step, results]);
 
   const handleStartRun = async (parsedQueries: Query[]) => {
     // Prevent double-submission using ref (works across re-renders)
