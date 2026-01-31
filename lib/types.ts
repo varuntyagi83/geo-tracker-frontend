@@ -225,9 +225,10 @@ export interface BrandDetailResponse {
 // Previous Runs History types
 export interface RunHistorySummary {
   runTs: string;
+  jobId: string | null;  // Job ID for viewing detailed results
   brandName: string;
   providers: string[];
-  models: string[];
+  models?: string[];
   mode: string;
   market: string;
   lang: string;

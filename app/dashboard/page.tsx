@@ -1635,6 +1635,39 @@ export default function DashboardPage() {
     setError(null);
   };
 
+  // Handle viewing a previous run's results
+  const handleViewPreviousRun = async (run: import('@/lib/types').RunHistorySummary) => {
+    if (!run.jobId) {
+      setError('This run does not have detailed results available.');
+      return;
+    }
+
+    setError(null);
+    setIsStarting(true);
+
+    try {
+      // Load the results for this run
+      const runResults = await getRunResults(run.jobId);
+
+      // Update state to show results
+      setCompanyData({
+        brandName: run.brandName,
+        industry: '',
+        businessContext: '',
+        questionCount: run.totalQueries
+      });
+      setResults(runResults);
+      setJobId(run.jobId);
+      setStep(3);  // Go to results view
+      setViewMode('new');  // Switch out of history mode to show results
+    } catch (err) {
+      console.error('Failed to load run results:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load run details');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
   // Show loading while checking auth
   if (authLoading) {
     return (
@@ -1723,7 +1756,16 @@ export default function DashboardPage() {
             exit={{ opacity: 0, y: -20 }}
             className="max-w-6xl mx-auto"
           >
-            <PreviousRuns companyId="demo-company" />
+            <PreviousRuns
+              companyId="demo-company"
+              onSelectRun={handleViewPreviousRun}
+            />
+            {isStarting && (
+              <div className="mt-4 flex items-center justify-center gap-2 text-blue-400">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Loading run details...
+              </div>
+            )}
           </motion.div>
         )}
 

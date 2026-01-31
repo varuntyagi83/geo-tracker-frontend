@@ -135,10 +135,12 @@ export function PreviousRuns({ companyId, onSelectRun }: PreviousRunsProps) {
               <div
                 key={`${run.runTs}-${index}`}
                 className={cn(
-                  'grid grid-cols-12 gap-4 px-4 py-3 rounded-lg border transition-colors cursor-pointer',
-                  'bg-gray-900/50 border-gray-700 hover:bg-gray-700/50'
+                  'grid grid-cols-12 gap-4 px-4 py-3 rounded-lg border transition-all cursor-pointer group',
+                  'bg-gray-900/50 border-gray-700 hover:bg-gray-700/50 hover:border-blue-500/50',
+                  run.jobId ? 'hover:shadow-lg hover:shadow-blue-500/10' : 'opacity-70 cursor-not-allowed'
                 )}
-                onClick={() => onSelectRun?.(run)}
+                onClick={() => run.jobId && onSelectRun?.(run)}
+                title={run.jobId ? 'Click to view details' : 'No detailed data available'}
               >
                 {/* Brand / Date */}
                 <div className="col-span-3">
@@ -202,13 +204,24 @@ export function PreviousRuns({ companyId, onSelectRun }: PreviousRunsProps) {
                 </div>
 
                 {/* Mode */}
-                <div className="col-span-1">
+                <div className="col-span-1 flex items-center justify-between">
                   <span className={cn(
                     'text-xs px-2 py-0.5 rounded',
                     run.mode === 'provider_web' ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-700 text-gray-300'
                   )}>
                     {run.mode === 'provider_web' ? 'Web' : 'Internal'}
                   </span>
+                  {/* Click indicator */}
+                  {run.jobId && (
+                    <svg
+                      className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition-colors"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
                 </div>
               </div>
             ))}

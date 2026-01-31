@@ -487,6 +487,7 @@ export async function getRunHistory(
   return {
     runs: response.runs.map((r: any) => ({
       runTs: r.run_ts,
+      jobId: r.job_id,  // Job ID for viewing detailed results
       brandName: r.brand_name,
       providers: r.providers || [],
       models: r.models || [],
