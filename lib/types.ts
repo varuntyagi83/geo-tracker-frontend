@@ -201,13 +201,13 @@ export interface Brand {
 export interface BrandRun {
   id: number;
   brandId: number;
-  jobId: string;
+  jobId: string | null;
   providers: string[];
   mode: string;
   totalQueries: number;
   visibilityPct: number;
-  avgSentiment: number;
-  avgTrust: number;
+  avgSentiment: number | null;
+  avgTrust: number | null;
   competitorSummary: Record<string, number>;
   createdAt: string;
 }
