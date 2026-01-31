@@ -1209,13 +1209,17 @@ function CTASection() {
   // Formspree form ID
   const FORMSPREE_FORM_ID = 'mnjvknpa';
 
+  // Backend API URL for sending acknowledgment email
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const response = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
+      // 1. Submit to Formspree (primary form storage)
+      const formspreeResponse = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1231,12 +1235,31 @@ function CTASection() {
         }),
       });
 
-      if (response.ok) {
-        setSubmitted(true);
-      } else {
-        const data = await response.json();
+      if (!formspreeResponse.ok) {
+        const data = await formspreeResponse.json();
         throw new Error(data.error || 'Failed to submit form');
       }
+
+      // 2. Send acknowledgment email via backend (fire and forget)
+      // Don't wait for this - just trigger it
+      fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company: formData.company,
+          email: formData.email,
+          website: formData.website,
+          industry: formData.industry,
+          service: formData.service,
+        }),
+      }).catch(() => {
+        // Silently fail - email is nice to have, not critical
+        console.log('Auto-reply email could not be sent');
+      });
+
+      setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit. Please try again.');
     } finally {
