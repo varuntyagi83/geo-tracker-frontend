@@ -1200,6 +1200,7 @@ function CTASection() {
     website: '',
     industry: '',
     email: '',
+    service: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -1225,7 +1226,8 @@ function CTASection() {
           website: formData.website,
           industry: formData.industry,
           email: formData.email,
-          _subject: `New GEO Tracker Lead: ${formData.company}`,
+          service: formData.service,
+          _subject: `New GEO Tracker Lead: ${formData.company} - ${formData.service || 'General Inquiry'}`,
         }),
       });
 
@@ -1292,7 +1294,7 @@ function CTASection() {
                   />
                 </div>
               </div>
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Industry *</label>
                   <select
@@ -1321,6 +1323,23 @@ function CTASection() {
                     placeholder="you@company.com"
                   />
                 </div>
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">Interested In *</label>
+                <select
+                  required
+                  value={formData.service}
+                  onChange={e => setFormData({ ...formData, service: e.target.value })}
+                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select a service</option>
+                  <option value="Free AI Visibility Audit">Free AI Visibility Audit</option>
+                  <option value="Self-Service Platform (Starter)">Self-Service Platform - Starter (Free)</option>
+                  <option value="Self-Service Platform (Pro)">Self-Service Platform - Pro (€99/mo)</option>
+                  <option value="Self-Service Platform (Business)">Self-Service Platform - Business (€299/mo)</option>
+                  <option value="AEO Audit (One-time)">AEO Audit - One-time (€2,499)</option>
+                  <option value="AEO Management (Subscription)">AEO Management - Subscription (€1,499/mo)</option>
+                </select>
               </div>
               {error && (
                 <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
