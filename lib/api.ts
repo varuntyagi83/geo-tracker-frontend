@@ -58,6 +58,11 @@ export async function checkHealth(): Promise<HealthResponse> {
 
 // Start a new run
 export async function startRun(config: RunConfig): Promise<JobCreatedResponse> {
+  // Validate queries exist before sending
+  if (!config.queries || config.queries.length === 0) {
+    throw new Error('No queries provided. Please add at least one question before starting analysis.');
+  }
+
   // Convert camelCase to snake_case for API
   const payload = {
     company_id: config.companyId,
@@ -81,6 +86,8 @@ export async function startRun(config: RunConfig): Promise<JobCreatedResponse> {
     max_retries: config.maxRetries || 1,
     sleep_ms: config.sleepMs || 0,
   };
+
+  console.log('[startRun] Sending payload with', payload.queries.length, 'queries');
 
   const response = await fetchAPI<any>('/api/runs', {
     method: 'POST',
