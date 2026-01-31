@@ -89,8 +89,6 @@ export async function startRun(config: RunConfig): Promise<JobCreatedResponse> {
     sleep_ms: config.sleepMs || 0,
   };
 
-  console.log('[startRun] Sending payload with', payload.queries.length, 'queries');
-
   const response = await fetchAPI<any>('/api/runs', {
     method: 'POST',
     body: JSON.stringify(payload),

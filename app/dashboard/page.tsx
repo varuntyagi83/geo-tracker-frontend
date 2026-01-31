@@ -15,9 +15,6 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   ExternalLink,
   ChevronRight,
   ChevronDown,
@@ -1535,18 +1532,34 @@ export default function DashboardPage() {
 
   // Check API connection on mount
   useEffect(() => {
+    let isMounted = true;
+
     checkHealth()
-      .then(() => setIsConnected(true))
-      .catch(() => setIsConnected(false));
+      .then(() => {
+        if (isMounted) setIsConnected(true);
+      })
+      .catch(() => {
+        if (isMounted) setIsConnected(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Poll for progress when job is running
   useEffect(() => {
     if (!jobId || step !== 3) return;
 
+    let isMounted = true;
+
     const pollInterval = setInterval(async () => {
+      if (!isMounted) return;
+
       try {
         const status = await getRunStatus(jobId);
+        if (!isMounted) return;
+
         setProgress(status);
 
         if (['completed', 'failed', 'cancelled'].includes(status.status)) {
@@ -1554,33 +1567,40 @@ export default function DashboardPage() {
 
           if (status.status === 'completed') {
             const runResults = await getRunResults(jobId);
-            setResults(runResults);
+            if (isMounted) {
+              setResults(runResults);
+            }
           } else {
             const errorMsg = status.error
               ? `Run ${status.status}: ${status.error.split('\n')[0]}`
               : `Run ${status.status}`;
-            setError(errorMsg);
+            if (isMounted) {
+              setError(errorMsg);
+            }
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to get status');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to get status');
+        }
         clearInterval(pollInterval);
       }
     }, 2000);
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+    };
   }, [jobId, step]);
 
   const handleStartRun = async (parsedQueries: Query[]) => {
     // Prevent double-submission using ref (works across re-renders)
     if (isSubmittingRef.current) {
-      console.log('[handleStartRun] Already submitting, ignoring click');
       return;
     }
 
     // Check if queries are valid
     if (!parsedQueries || parsedQueries.length === 0) {
-      console.log('[handleStartRun] No queries provided');
       setError('No queries to analyze. Please add at least one question.');
       return;
     }
@@ -1600,18 +1620,15 @@ export default function DashboardPage() {
         perplexityModel,
         anthropicModel,
         mode,
-        queries: parsedQueries,  // Use passed queries instead of state
+        queries: parsedQueries,
         market,
         lang: language,
       };
 
-      console.log('[handleStartRun] Starting run with', parsedQueries.length, 'queries');
       const response = await startRun(config);
-      console.log('[handleStartRun] Run started:', response.jobId);
       setJobId(response.jobId);
       setStep(3);
     } catch (err) {
-      console.error('[handleStartRun] Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to start run');
     } finally {
       isSubmittingRef.current = false;
@@ -1651,17 +1668,16 @@ export default function DashboardPage() {
 
       // Update state to show results
       setCompanyData({
-        brandName: run.brandName,
+        brandName: run.brandName || 'Unknown Brand',
         industry: '',
         businessContext: '',
-        questionCount: run.totalQueries
+        questionCount: run.totalQueries || 0
       });
       setResults(runResults);
       setJobId(run.jobId);
       setStep(3);  // Go to results view
       setViewMode('new');  // Switch out of history mode to show results
     } catch (err) {
-      console.error('Failed to load run results:', err);
       setError(err instanceof Error ? err.message : 'Failed to load run details');
     } finally {
       setIsStarting(false);

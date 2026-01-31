@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { getRunHistory } from '@/lib/api';
 import type { RunHistorySummary } from '@/lib/types';
@@ -10,7 +10,6 @@ import {
   Building2,
   RefreshCw,
   Clock,
-  TrendingUp,
   Loader2,
   AlertCircle,
 } from 'lucide-react';
@@ -38,22 +37,38 @@ export function PreviousRuns({ companyId, onSelectRun }: PreviousRunsProps) {
   const [sinceDays, setSinceDays] = useState(30);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadRuns();
-  }, [companyId, sinceDays]);
+  // Ref to track if component is mounted (prevents state updates after unmount)
+  const isMountedRef = useRef(true);
 
-  const loadRuns = async () => {
+  const loadRuns = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await getRunHistory(companyId, 50, sinceDays);
-      setRuns(response.runs);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setRuns(response.runs);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load run history');
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to load run history');
+      }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [companyId, sinceDays]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    loadRuns();
+
+    // Cleanup: mark as unmounted to prevent state updates
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [loadRuns]);
 
   // Group runs by company name
   const companyGroups = useMemo((): CompanyGroup[] => {
