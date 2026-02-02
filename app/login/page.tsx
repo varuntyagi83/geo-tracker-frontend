@@ -134,6 +134,14 @@ export default function LoginPage() {
               Email: demo@geotracker.io<br />
               Password: demo123
             </p>
+            <div className="mt-3 pt-3 border-t border-dark-600">
+              <p className="text-xs text-dark-500 text-center">
+                Admin users also get access to the{' '}
+                <Link href="/admin" className="text-primary-400 hover:text-primary-300">
+                  Lead Management Panel
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>

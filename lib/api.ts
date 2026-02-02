@@ -508,11 +508,23 @@ export async function getRunHistory(
 // USER AUTHENTICATION
 // ============================================
 
+export interface UserPermissions {
+  can_view_leads: boolean;
+  can_view_emails: boolean;
+  can_update_leads: boolean;
+  can_delete_leads: boolean;
+  can_view_stats: boolean;
+  can_manage_users: boolean;
+  can_access_dashboard: boolean;
+  can_access_admin: boolean;
+}
+
 export interface AuthUser {
   id: number;
   email: string;
   name: string;
   company?: string;
+  role?: string;  // 'admin', 'user', or 'demo'
   created_at?: string;
   last_login?: string;
 }
@@ -521,6 +533,7 @@ export interface AuthResponse {
   success: boolean;
   token: string;
   user: AuthUser;
+  permissions?: UserPermissions;
   expires_in: number;
   message?: string;
 }
@@ -528,6 +541,7 @@ export interface AuthResponse {
 export interface AuthVerifyResponse {
   valid: boolean;
   user: AuthUser;
+  permissions?: UserPermissions;
   expires_at: string;
 }
 

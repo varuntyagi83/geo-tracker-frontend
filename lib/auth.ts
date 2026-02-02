@@ -5,10 +5,23 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+export interface UserPermissions {
+  can_view_leads: boolean;
+  can_view_emails: boolean;
+  can_update_leads: boolean;
+  can_delete_leads: boolean;
+  can_view_stats: boolean;
+  can_manage_users: boolean;
+  can_access_dashboard: boolean;
+  can_access_admin: boolean;
+}
+
 export interface User {
   email: string;
   name?: string;
   company?: string;
+  role?: string;  // 'admin', 'user', or 'demo'
+  permissions?: UserPermissions;
 }
 
 interface AuthContextType {

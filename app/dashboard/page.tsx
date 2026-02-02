@@ -197,6 +197,9 @@ function Header() {
     router.push('/');
   };
 
+  // Check if user has admin access
+  const canAccessAdmin = user?.permissions?.can_access_admin || user?.role === 'admin' || user?.role === 'demo';
+
   return (
     <header className="border-b border-dark-700 bg-dark-900/80 backdrop-blur-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -208,11 +211,27 @@ function Header() {
           <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/docs`} target="_blank" className="text-sm text-dark-400 hover:text-white transition-colors flex items-center gap-1">
             API <ExternalLink className="w-3 h-3" />
           </a>
+          {user && canAccessAdmin && (
+            <Link
+              href="/admin"
+              className="px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
+            >
+              Admin Panel
+            </Link>
+          )}
           {user && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-dark-400">
                 <User className="w-4 h-4" />
                 {user.name || user.email}
+                {user.role && user.role !== 'user' && (
+                  <span className={cn(
+                    'px-1.5 py-0.5 rounded text-xs',
+                    user.role === 'admin' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                  )}>
+                    {user.role}
+                  </span>
+                )}
               </div>
               <button
                 onClick={handleLogout}

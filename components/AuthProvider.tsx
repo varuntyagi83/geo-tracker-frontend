@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, ReactNode } from 'react';
-import { AuthContext, User, getStoredUser, setStoredUser } from '@/lib/auth';
+import { AuthContext, User, getStoredUser, setStoredUser, UserPermissions } from '@/lib/auth';
 import {
   loginUser,
   signupUser,
@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: response.user.email,
               name: response.user.name,
               company: response.user.company,
+              role: response.user.role,
+              permissions: response.permissions as UserPermissions,
             };
             setUser(user);
             setStoredUser(user);
@@ -73,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: response.user.email,
           name: response.user.name,
           company: response.user.company,
+          role: response.user.role,
+          permissions: response.permissions as UserPermissions,
         };
         setUser(user);
         setStoredUser(user);
@@ -99,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: response.user.email,
           name: response.user.name,
           company: response.user.company,
+          role: response.user.role || 'user',
+          permissions: response.permissions as UserPermissions,
         };
         setUser(user);
         setStoredUser(user);

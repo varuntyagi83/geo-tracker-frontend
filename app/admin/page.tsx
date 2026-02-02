@@ -1,8 +1,10 @@
 // app/admin/page.tsx - Admin Panel for Lead Management
+// Supports both unified auth (email/password via /login) and legacy admin login (username/password)
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Globe,
   Users,
@@ -19,8 +21,11 @@ import {
   Filter,
   BarChart3,
   AlertCircle,
+  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
+import { getAuthToken } from '@/lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -72,12 +77,14 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { user: unifiedUser, isLoading: authLoading, logout: unifiedLogout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [authSource, setAuthSource] = useState<'unified' | 'legacy' | null>(null);
 
-  // Login form
+  // Login form (for legacy admin login)
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -95,15 +102,42 @@ export default function AdminPage() {
   const [notes, setNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Check for existing token on mount
+  // Check for unified auth first, then legacy admin token
   useEffect(() => {
+    if (authLoading) return;
+
+    // Check if user is logged in via unified auth with admin/demo role
+    if (unifiedUser && unifiedUser.permissions?.can_access_admin) {
+      const unifiedToken = getAuthToken();
+      if (unifiedToken) {
+        setToken(unifiedToken);
+        setAdminUser({
+          username: unifiedUser.email,
+          role: unifiedUser.role || 'user',
+          permissions: {
+            can_view_leads: unifiedUser.permissions?.can_view_leads || false,
+            can_view_emails: unifiedUser.permissions?.can_view_emails || false,
+            can_update_leads: unifiedUser.permissions?.can_update_leads || false,
+            can_delete_leads: unifiedUser.permissions?.can_delete_leads || false,
+            can_view_stats: unifiedUser.permissions?.can_view_stats || false,
+            can_manage_users: unifiedUser.permissions?.can_manage_users || false,
+          },
+        });
+        setIsAuthenticated(true);
+        setAuthSource('unified');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Fallback to legacy admin token
     const storedToken = localStorage.getItem('admin_token');
     if (storedToken) {
       verifyToken(storedToken);
     } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [authLoading, unifiedUser]);
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
@@ -118,6 +152,7 @@ export default function AdminPage() {
         setToken(tokenToVerify);
         setAdminUser(data);
         setIsAuthenticated(true);
+        setAuthSource('legacy');
       } else {
         localStorage.removeItem('admin_token');
       }
@@ -153,6 +188,7 @@ export default function AdminPage() {
           permissions: data.permissions,
         });
         setIsAuthenticated(true);
+        setAuthSource('legacy');
       } else {
         setLoginError(data.detail || 'Login failed');
       }
@@ -164,10 +200,18 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
+    if (authSource === 'unified') {
+      // Unified auth - logout fully and redirect to login
+      unifiedLogout();
+      router.push('/login');
+    } else {
+      // Legacy admin auth - just clear admin token
+      localStorage.removeItem('admin_token');
+    }
     setToken(null);
     setAdminUser(null);
     setIsAuthenticated(false);
+    setAuthSource(null);
     setLeads([]);
     setStats(null);
   };
@@ -269,13 +313,32 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
+          {/* Back to Dashboard */}
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-dark-400 hover:text-white transition-colors mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+
           <div className="text-center mb-8">
             <Globe className="w-12 h-12 text-primary-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold">Admin Panel</h1>
             <p className="text-dark-400 mt-2">GEO Tracker Lead Management</p>
           </div>
 
+          {/* Unified Login Notice */}
+          <div className="mb-6 p-4 bg-primary-500/10 border border-primary-500/30 rounded-xl">
+            <p className="text-primary-400 text-sm">
+              <strong>Tip:</strong> If you&apos;re already logged in via{' '}
+              <Link href="/login" className="underline hover:text-primary-300">/login</Link>{' '}
+              with an admin or demo account, you&apos;ll have automatic access to this panel.
+            </p>
+          </div>
+
           <form onSubmit={handleLogin} className="bg-dark-800 rounded-xl p-6 border border-dark-700">
+            <p className="text-sm text-dark-400 mb-4">Legacy admin login (username/password):</p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Username</label>
@@ -320,6 +383,15 @@ export default function AdminPage() {
               <p className="text-xs text-dark-500 mt-2">Demo users have limited access (masked emails, read-only)</p>
             </div>
           </form>
+
+          <div className="mt-4 text-center">
+            <Link
+              href="/login"
+              className="text-primary-400 hover:text-primary-300 text-sm transition-colors"
+            >
+              Use unified login instead →
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -333,13 +405,21 @@ export default function AdminPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Globe className="w-8 h-8 text-primary-500" />
-              <div>
-                <h1 className="text-xl font-bold">Admin Panel</h1>
-                <p className="text-xs text-dark-400">Lead Management</p>
-              </div>
+              <Link href="/dashboard" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+                <Globe className="w-8 h-8 text-primary-500" />
+                <div>
+                  <h1 className="text-xl font-bold">Admin Panel</h1>
+                  <p className="text-xs text-dark-400">Lead Management</p>
+                </div>
+              </Link>
             </div>
             <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 rounded-lg transition-colors"
+              >
+                Dashboard
+              </Link>
               <div className="text-right">
                 <p className="text-sm font-medium">{adminUser?.username}</p>
                 <p className={cn(
