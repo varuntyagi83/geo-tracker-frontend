@@ -1219,7 +1219,10 @@ function CTASection() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Backend API URL - this is now the primary submission endpoint
+  // Formspree form ID
+  const FORMSPREE_FORM_ID = 'mnjvknpa';
+
+  // Backend API URL for sending acknowledgment email
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1228,12 +1231,8 @@ function CTASection() {
     setError(null);
 
     try {
-      // Submit directly to our backend (Formspree removed)
-      // Backend handles:
-      // 1. Saving lead to database
-      // 2. Sending acknowledgment email to lead
-      // 3. Sending notification email to admin(s)
-      const response = await fetch(`${API_BASE_URL}/api/leads`, {
+      // 1. Submit to Formspree (primary form storage)
+      const formspreeResponse = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1241,27 +1240,40 @@ function CTASection() {
         },
         body: JSON.stringify({
           company: formData.company,
+          website: formData.website,
+          industry: formData.industry,
           email: formData.email,
-          website: formData.website || undefined,
-          industry: formData.industry || undefined,
           service: formData.service,
+          _subject: `New GEO Tracker Lead: ${formData.company} - ${formData.service || 'General Inquiry'}`,
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.detail || 'Failed to submit form');
+      if (!formspreeResponse.ok) {
+        const data = await formspreeResponse.json();
+        throw new Error(data.error || 'Failed to submit form');
       }
 
-      // Success - lead was captured (even if email failed)
-      if (data.success) {
-        setSubmitted(true);
-      } else {
-        throw new Error(data.message || 'Failed to submit form');
-      }
+      // 2. Send acknowledgment email via backend (fire and forget)
+      // Don't wait for this - just trigger it
+      fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company: formData.company,
+          email: formData.email,
+          website: formData.website,
+          industry: formData.industry,
+          service: formData.service,
+        }),
+      }).catch(() => {
+        // Silently fail - email is nice to have, not critical
+        console.log('Auto-reply email could not be sent');
+      });
+
+      setSubmitted(true);
     } catch (err) {
-      console.error('Form submission error:', err);
       setError(err instanceof Error ? err.message : 'Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
