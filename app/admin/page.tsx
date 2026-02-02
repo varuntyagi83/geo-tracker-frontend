@@ -1,5 +1,5 @@
 // app/admin/page.tsx - Admin Panel for Lead Management
-// Supports both unified auth (email/password via /login) and legacy admin login (username/password)
+// Uses unified auth - redirects to /login if not authenticated
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -21,7 +21,6 @@ import {
   Filter,
   BarChart3,
   AlertCircle,
-  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -77,18 +76,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user: unifiedUser, isLoading: authLoading, logout: unifiedLogout } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, isLoading: authLoading, logout } = useAuth();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [authSource, setAuthSource] = useState<'unified' | 'legacy' | null>(null);
-
-  // Login form (for legacy admin login)
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Leads data
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -102,118 +92,44 @@ export default function AdminPage() {
   const [notes, setNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Check for unified auth first, then legacy admin token
+  // Check unified auth - redirect to /login if not authenticated or no admin access
   useEffect(() => {
     if (authLoading) return;
 
-    // Check if user is logged in via unified auth with admin/demo role
-    if (unifiedUser && unifiedUser.permissions?.can_access_admin) {
-      const unifiedToken = getAuthToken();
-      if (unifiedToken) {
-        setToken(unifiedToken);
-        setAdminUser({
-          username: unifiedUser.email,
-          role: unifiedUser.role || 'user',
-          permissions: {
-            can_view_leads: unifiedUser.permissions?.can_view_leads || false,
-            can_view_emails: unifiedUser.permissions?.can_view_emails || false,
-            can_update_leads: unifiedUser.permissions?.can_update_leads || false,
-            can_delete_leads: unifiedUser.permissions?.can_delete_leads || false,
-            can_view_stats: unifiedUser.permissions?.can_view_stats || false,
-            can_manage_users: unifiedUser.permissions?.can_manage_users || false,
-          },
-        });
-        setIsAuthenticated(true);
-        setAuthSource('unified');
-        setIsLoading(false);
-        return;
-      }
+    // Not logged in at all - redirect to login
+    if (!user) {
+      router.push('/login');
+      return;
     }
 
-    // Fallback to legacy admin token
-    const storedToken = localStorage.getItem('admin_token');
-    if (storedToken) {
-      verifyToken(storedToken);
-    } else {
-      setIsLoading(false);
+    // Logged in but doesn't have admin access - redirect to dashboard
+    if (!user.permissions?.can_access_admin && user.role !== 'admin' && user.role !== 'demo') {
+      router.push('/dashboard');
+      return;
     }
-  }, [authLoading, unifiedUser]);
 
-  const verifyToken = async (tokenToVerify: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/me`, {
-        headers: {
-          Authorization: `Bearer ${tokenToVerify}`,
+    // User has admin access - set up admin user state
+    const authToken = getAuthToken();
+    if (authToken) {
+      setToken(authToken);
+      setAdminUser({
+        username: user.email,
+        role: user.role || 'user',
+        permissions: {
+          can_view_leads: user.permissions?.can_view_leads || false,
+          can_view_emails: user.permissions?.can_view_emails || false,
+          can_update_leads: user.permissions?.can_update_leads || false,
+          can_delete_leads: user.permissions?.can_delete_leads || false,
+          can_view_stats: user.permissions?.can_view_stats || false,
+          can_manage_users: user.permissions?.can_manage_users || false,
         },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setToken(tokenToVerify);
-        setAdminUser(data);
-        setIsAuthenticated(true);
-        setAuthSource('legacy');
-      } else {
-        localStorage.removeItem('admin_token');
-      }
-    } catch (error) {
-      localStorage.removeItem('admin_token');
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoggingIn(true);
-    setLoginError(null);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('admin_token', data.token);
-        setToken(data.token);
-        setAdminUser({
-          username: data.username,
-          role: data.role,
-          permissions: data.permissions,
-        });
-        setIsAuthenticated(true);
-        setAuthSource('legacy');
-      } else {
-        setLoginError(data.detail || 'Login failed');
-      }
-    } catch (error) {
-      setLoginError('Network error. Please try again.');
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
+  }, [authLoading, user, router]);
 
   const handleLogout = () => {
-    if (authSource === 'unified') {
-      // Unified auth - logout fully and redirect to login
-      unifiedLogout();
-      router.push('/login');
-    } else {
-      // Legacy admin auth - just clear admin token
-      localStorage.removeItem('admin_token');
-    }
-    setToken(null);
-    setAdminUser(null);
-    setIsAuthenticated(false);
-    setAuthSource(null);
-    setLeads([]);
-    setStats(null);
+    logout();
+    router.push('/login');
   };
 
   const fetchLeads = useCallback(async () => {
@@ -260,13 +176,13 @@ export default function AdminPage() {
     }
   }, [token]);
 
-  // Fetch data when authenticated
+  // Fetch data when token is available
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (token) {
       fetchLeads();
       fetchStats();
     }
-  }, [isAuthenticated, token, fetchLeads, fetchStats]);
+  }, [token, fetchLeads, fetchStats]);
 
   const handleUpdateLead = async () => {
     if (!selectedLead || !newStatus || !token) return;
@@ -296,102 +212,13 @@ export default function AdminPage() {
     }
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state - show while checking auth
+  if (authLoading || !adminUser) {
     return (
       <div className="min-h-screen bg-dark-900 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-4" />
           <p className="text-dark-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Login form
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Back to Dashboard */}
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 text-dark-400 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-
-          <div className="text-center mb-8">
-            <Globe className="w-12 h-12 text-primary-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold">Admin Panel</h1>
-            <p className="text-dark-400 mt-2">GEO Tracker Lead Management</p>
-          </div>
-
-          {/* Unified Login Notice */}
-          <div className="mb-6 p-4 bg-primary-500/10 border border-primary-500/30 rounded-xl">
-            <p className="text-primary-400 text-sm">
-              <strong>Tip:</strong> If you&apos;re already logged in via{' '}
-              <Link href="/login" className="underline hover:text-primary-300">/login</Link>{' '}
-              with an admin or demo account, you&apos;ll have automatic access to this panel.
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin} className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-            <p className="text-sm text-dark-400 mb-4">Legacy admin login (username/password):</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter username"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter password"
-                  required
-                />
-              </div>
-              {loginError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                  {loginError}
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={isLoggingIn}
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-500/50 rounded-lg font-medium transition-colors"
-              >
-                {isLoggingIn ? 'Signing in...' : 'Sign In'}
-              </button>
-            </div>
-
-            <div className="mt-6 p-4 bg-dark-700/50 rounded-lg">
-              <p className="text-xs text-dark-400 mb-2">Demo Access:</p>
-              <p className="text-xs text-dark-300">Username: <code className="bg-dark-600 px-1 rounded">demo</code></p>
-              <p className="text-xs text-dark-300">Password: <code className="bg-dark-600 px-1 rounded">demo123</code></p>
-              <p className="text-xs text-dark-500 mt-2">Demo users have limited access (masked emails, read-only)</p>
-            </div>
-          </form>
-
-          <div className="mt-4 text-center">
-            <Link
-              href="/login"
-              className="text-primary-400 hover:text-primary-300 text-sm transition-colors"
-            >
-              Use unified login instead →
-            </Link>
-          </div>
         </div>
       </div>
     );
