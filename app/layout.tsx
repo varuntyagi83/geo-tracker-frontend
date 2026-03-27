@@ -6,6 +6,9 @@ import { AuthProvider } from '@/components/AuthProvider';
 export const metadata: Metadata = {
   title: 'GEO Tracker - AI Visibility Analytics',
   description: 'Track your brand visibility across AI assistants like ChatGPT, Claude, Gemini, and Perplexity',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
