@@ -1,8 +1,8 @@
-# GEO Tracker Frontend
+# GEO Raydar Frontend
 
-Modern Next.js 14 dashboard for the GEO Tracker SaaS application.
+Modern Next.js 14 dashboard for the GEO Raydar SaaS application.
 
-![GEO Tracker Dashboard](https://via.placeholder.com/800x400?text=GEO+Tracker+Dashboard)
+![GEO Raydar Dashboard](https://via.placeholder.com/800x400?text=GEO+Tracker+Dashboard)
 
 ## Features
 
@@ -17,7 +17,7 @@ Modern Next.js 14 dashboard for the GEO Tracker SaaS application.
 ### Prerequisites
 
 - Node.js 18+ 
-- GEO Tracker API running on port 8000
+- GEO Raydar API running on port 8000
 
 ### Installation
 
@@ -39,7 +39,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Before You Start
 
-Make sure the GEO Tracker API is running:
+Make sure the GEO Raydar API is running:
 
 ```bash
 # In the geo_tracker_full directory

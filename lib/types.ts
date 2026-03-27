@@ -1,5 +1,5 @@
 // lib/types.ts
-// Type definitions for the GEO Tracker application
+// Type definitions for the GEO Raydar application
 
 export type Provider = 'openai' | 'gemini' | 'perplexity' | 'anthropic';
 export type Mode = 'internal' | 'provider_web';

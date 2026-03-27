@@ -205,7 +205,7 @@ function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Globe className="w-8 h-8 text-primary-500" />
-          <span className="text-xl font-bold">GEO Tracker</span>
+          <span className="text-xl font-bold">GEO Raydar</span>
         </Link>
         <nav className="flex items-center gap-4">
           <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/docs`} target="_blank" className="text-sm text-dark-400 hover:text-white transition-colors flex items-center gap-1">
@@ -1749,7 +1749,7 @@ export default function DashboardPage() {
           <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">API Not Connected</h1>
           <p className="text-dark-400 mb-4">
-            Make sure the GEO Tracker API is running on port 8000
+            Make sure the GEO Raydar API is running on port 8000
           </p>
           <code className="bg-dark-800 px-4 py-2 rounded text-sm">
             uvicorn api.main:app --reload --port 8000
@@ -1906,7 +1906,7 @@ export default function DashboardPage() {
 
       <footer className="border-t border-dark-700 py-4">
         <div className="container mx-auto px-4 text-center text-sm text-dark-400">
-          GEO Tracker &copy; 2026 - Track your brand visibility across AI assistants
+          GEO Raydar &copy; 2026 - Track your brand visibility across AI assistants
         </div>
       </footer>
     </div>

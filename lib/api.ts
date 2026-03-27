@@ -1,5 +1,5 @@
 // lib/api.ts
-// API client for GEO Tracker backend
+// API client for GEO Raydar backend
 
 import type {
   RunConfig,
