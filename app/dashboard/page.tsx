@@ -31,6 +31,7 @@ import {
   User,
   History,
   PlusCircle,
+  Download,
 } from 'lucide-react';
 
 import {
@@ -56,6 +57,8 @@ import { SheetInput } from '@/components/SheetInput';
 import { VisibilityReport } from '@/components/VisibilityReport';
 import { BrandHistory } from '@/components/BrandHistory';
 import { PreviousRuns } from '@/components/PreviousRuns';
+import { PDFReport } from '@/components/PDFReport/index';
+import { exportReportToPDF } from '@/lib/pdf-export';
 import {
   cn,
   formatDuration,
@@ -318,7 +321,7 @@ function CompanySetup({
               type="text"
               value={formData.brandName}
               onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
-              placeholder="e.g., Sunday Natural"
+              placeholder="e.g., Nike"
               className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <p className="text-xs text-dark-400 mt-1">
@@ -1174,6 +1177,32 @@ function ResultsView({
   const { summary } = results;
   const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources' | 'report' | 'history'>('overview');
   const [providerFilter, setProviderFilter] = useState<string>('all');
+  const pdfReportRef = useRef<HTMLDivElement>(null);
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
+  const [pdfProgressLabel, setPdfProgressLabel] = useState('');
+
+  const handleDownloadPDF = async () => {
+    if (!pdfReportRef.current) return;
+    setIsPdfExporting(true);
+    setPdfProgress(0);
+    try {
+      await exportReportToPDF(
+        pdfReportRef.current,
+        brandName,
+        (pct, label) => {
+          setPdfProgress(pct);
+          setPdfProgressLabel(label);
+        }
+      );
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setIsPdfExporting(false);
+      setPdfProgress(0);
+      setPdfProgressLabel('');
+    }
+  };
 
   const competitorStats = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -1241,13 +1270,37 @@ function ResultsView({
           <ChevronRight className="w-4 h-4 rotate-180" />
           Back to Dashboard
         </button>
-        <button
-          onClick={onNewRun}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium transition-colors"
-        >
-          <PlusCircle className="w-4 h-4" />
-          New Analysis
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownloadPDF}
+            disabled={isPdfExporting}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              isPdfExporting
+                ? 'bg-dark-700 text-dark-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-900/30'
+            )}
+          >
+            {isPdfExporting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {pdfProgress > 0 ? `${pdfProgress}% · ${pdfProgressLabel}` : 'Preparing report…'}
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Download PDF Report
+              </>
+            )}
+          </button>
+          <button
+            onClick={onNewRun}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            New Analysis
+          </button>
+        </div>
       </div>
 
       <div className="text-center mb-8">
@@ -1514,6 +1567,13 @@ function ResultsView({
           <RefreshCw className="w-4 h-4" /> Run New Analysis
         </button>
       </div>
+
+      {/* Hidden PDF report — rendered off-screen for html2canvas capture */}
+      <PDFReport
+        ref={pdfReportRef}
+        results={results}
+        brandName={brandName}
+      />
     </motion.div>
   );
 }
