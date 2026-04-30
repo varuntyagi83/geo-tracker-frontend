@@ -17,7 +17,7 @@ const C = {
   border: '#334155',
   text: '#f1f5f9',
   muted: '#94a3b8',
-  faint: '#475569',
+  faint: '#64748b',
   primary: '#3b82f6',
   green: '#10b981',
   amber: '#f59e0b',
@@ -108,7 +108,7 @@ export function CoverPage({ results, brandName, market, lang }: SectionProps) {
         background: 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #14b8a6 100%)',
       }} />
 
-      <div style={{ padding: '36px 48px', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '36px 48px 80px', position: 'relative', zIndex: 1 }}>
         {/* Logo area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 80 }}>
           <div style={{

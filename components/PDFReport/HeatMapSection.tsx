@@ -16,7 +16,7 @@ const C = {
   border: '#334155',
   text: '#f1f5f9',
   muted: '#94a3b8',
-  faint: '#475569',
+  faint: '#64748b',
   teal: '#14b8a6',
   tealGlow: 'rgba(20,184,166,0.15)',
   green: '#10b981',

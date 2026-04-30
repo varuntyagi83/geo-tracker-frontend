@@ -17,7 +17,7 @@ const C = {
   border: '#334155',
   text: '#f1f5f9',
   muted: '#94a3b8',
-  faint: '#475569',
+  faint: '#64748b',
   orange: '#f97316',
   orangeGlow: 'rgba(249,115,22,0.15)',
   green: '#10b981',

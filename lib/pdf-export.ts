@@ -4,21 +4,36 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+const SCALE = 1.5;          // Down from 2 — still 144 DPI on A4, far smaller file
+const JPEG_QUALITY = 0.87;  // JPEG vs PNG: ~90% smaller files
+const PDF_W = 210;          // A4 width in mm
+const PDF_H = 297;          // A4 height in mm
+const SECTION_GAP = 4;      // mm gap drawn between consecutive sections on the same page
+
+// #0f172a decomposed for jsPDF setFillColor
+const BG_R = 15, BG_G = 23, BG_B = 42;
+
+function fillPageDark(pdf: jsPDF): void {
+  pdf.setFillColor(BG_R, BG_G, BG_B);
+  pdf.rect(0, 0, PDF_W, PDF_H, 'F');
+}
+
 /**
- * Renders each [data-pdf-page] element to a PNG canvas and assembles an A4 PDF.
+ * Renders each [data-pdf-page] element to a JPEG canvas and assembles an A4 PDF.
  *
- * Key technique: the `onclone` callback moves the cloned element to a visible
- * position in the document before html2canvas renders it, preventing the
- * browser from collapsing word/letter spacing for off-screen elements.
+ * Key improvements over the previous version:
+ *  - JPEG compression (not PNG) → ~90% smaller files
+ *  - scale 1.5 instead of 2 → 44% fewer pixels, still sharp
+ *  - Bin-packing: short sections share a page — no half-empty pages
+ *  - Dark background filled on every PDF page so gaps between sections are dark
+ *  - Page numbers added after all pages are assembled
+ *  - onclone moves the off-screen container to position:static so text spacing renders correctly
  */
 export async function exportReportToPDF(
   containerElement: HTMLElement,
   brandName: string,
   onProgress?: (pct: number, label: string) => void
 ): Promise<void> {
-  const pdfWidth = 210;
-  const pdfHeight = 297;
-
   const pageElements = Array.from(
     containerElement.querySelectorAll<HTMLElement>('[data-pdf-page]')
   );
@@ -30,23 +45,20 @@ export async function exportReportToPDF(
   }
 
   const pdf = new jsPDF('p', 'mm', 'a4');
-  let firstPage = true;
+  fillPageDark(pdf);
+
+  let currentY = 0; // mm from top of the current page
 
   for (let i = 0; i < total; i++) {
     const pageEl = pageElements[i];
 
-    onProgress?.(
-      Math.round((i / total) * 85),
-      `Rendering section ${i + 1} of ${total}`
-    );
+    onProgress?.(Math.round((i / total) * 88), `Rendering section ${i + 1} of ${total}`);
 
     const canvas = await html2canvas(pageEl, {
-      scale: 2,
+      scale: SCALE,
       useCORS: true,
       backgroundColor: '#0f172a',
       logging: false,
-      // Fix: bring the off-screen container into the viewport so the browser
-      // renders text with correct word/letter spacing instead of collapsing it
       onclone: (clonedDoc: Document) => {
         const container = clonedDoc.querySelector<HTMLElement>('[data-pdf-container]');
         if (container) {
@@ -57,55 +69,73 @@ export async function exportReportToPDF(
       },
     });
 
-    const imgHeightMM = (canvas.height / canvas.width) * pdfWidth;
-    const pixelsPerMM = canvas.width / pdfWidth;
-    const sliceHeightPx = Math.round(pdfHeight * pixelsPerMM);
+    const pixPerMM = canvas.width / PDF_W;
+    const sectionH = canvas.height / pixPerMM; // section height in mm
 
-    if (imgHeightMM <= pdfHeight) {
-      // Fits on a single A4 page
-      if (!firstPage) pdf.addPage();
-      firstPage = false;
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeightMM);
+    if (sectionH <= PDF_H) {
+      // ── Short section: try to pack it onto the current page ──────────────
+      const gap = currentY > 0 ? SECTION_GAP : 0;
+      if (currentY > 0 && currentY + gap + sectionH > PDF_H) {
+        // Doesn't fit — start a new page
+        pdf.addPage();
+        fillPageDark(pdf);
+        currentY = 0;
+      }
+      const drawY = currentY + (currentY > 0 ? SECTION_GAP : 0);
+      const imgData = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+      pdf.addImage(imgData, 'JPEG', 0, drawY, PDF_W, sectionH);
+      currentY = drawY + sectionH;
     } else {
-      // Slice into multiple A4 pages
+      // ── Tall section: slice it across multiple pages ──────────────────────
       let offsetPx = 0;
-      let firstSlice = true;
 
       while (offsetPx < canvas.height) {
         const remainingPx = canvas.height - offsetPx;
-        const thisSlicePx = Math.min(sliceHeightPx, remainingPx);
+        const availableH = offsetPx === 0 ? PDF_H - currentY : PDF_H;
+        const availablePx = Math.round(availableH * pixPerMM);
+        const slicePx = Math.min(availablePx, remainingPx);
 
-        // Skip a near-empty trailing slice (< 8% of A4) to eliminate blank pages
-        const isLastSlice = offsetPx + thisSlicePx >= canvas.height;
-        if (isLastSlice && thisSlicePx < sliceHeightPx * 0.08) {
-          break;
-        }
+        // Skip a tiny trailing sliver (< 5% of a page)
+        const isLast = offsetPx + slicePx >= canvas.height;
+        if (isLast && slicePx < availablePx * 0.05) break;
 
         const sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = canvas.width;
-        sliceCanvas.height = thisSlicePx;
-
+        sliceCanvas.height = slicePx;
         const ctx = sliceCanvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(
-            canvas,
-            0, offsetPx, canvas.width, thisSlicePx,
-            0, 0, canvas.width, thisSlicePx
-          );
+          ctx.drawImage(canvas, 0, offsetPx, canvas.width, slicePx, 0, 0, canvas.width, slicePx);
         }
 
-        const sliceImgData = sliceCanvas.toDataURL('image/png');
-        const sliceHeightMM = (thisSlicePx / canvas.width) * pdfWidth;
+        const sliceH = slicePx / pixPerMM;
+        const sliceImg = sliceCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+        pdf.addImage(sliceImg, 'JPEG', 0, currentY, PDF_W, sliceH);
 
-        if (!firstPage || !firstSlice) pdf.addPage();
-        firstPage = false;
-        firstSlice = false;
+        offsetPx += slicePx;
+        currentY += sliceH;
 
-        pdf.addImage(sliceImgData, 'PNG', 0, 0, pdfWidth, sliceHeightMM);
-        offsetPx += thisSlicePx;
+        if (offsetPx < canvas.height) {
+          pdf.addPage();
+          fillPageDark(pdf);
+          currentY = 0;
+        }
       }
     }
+  }
+
+  // ── Page numbers ──────────────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pageCount: number = (pdf as any).internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    pdf.setPage(p);
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(100, 116, 139); // #64748b slate-500
+    pdf.text(
+      `${brandName}  ·  GEO Raydar  ·  Page ${p} of ${pageCount}`,
+      PDF_W / 2,
+      PDF_H - 4,
+      { align: 'center' }
+    );
   }
 
   onProgress?.(100, 'Saving PDF...');
@@ -124,7 +154,6 @@ export function openReportAsHTML(
 ): void {
   const clone = containerElement.cloneNode(true) as HTMLElement;
 
-  // Strip the off-screen positioning
   clone.style.position = 'static';
   clone.style.left = 'auto';
   clone.style.top = 'auto';

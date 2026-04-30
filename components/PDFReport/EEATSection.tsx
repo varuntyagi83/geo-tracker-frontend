@@ -18,7 +18,7 @@ const C = {
   border: '#334155',
   text: '#f1f5f9',
   muted: '#94a3b8',
-  faint: '#475569',
+  faint: '#64748b',
   purple: '#8b5cf6',
   purpleGlow: 'rgba(139,92,246,0.15)',
   green: '#10b981',
