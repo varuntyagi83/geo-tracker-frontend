@@ -57,6 +57,7 @@ export const PDFReport = forwardRef<HTMLDivElement, PDFReportProps>(
     return (
       <div
         ref={ref}
+        data-pdf-container
         style={{
           position: 'fixed',
           left: '-9999px',

@@ -140,7 +140,7 @@ function generateFallbackCards(results: RunResults, brandName: string): Strategy
   const providerEntries = Object.entries(providerVisibility);
   if (providerEntries.length > 0) {
     const [worstProvider, worstScore] = providerEntries.sort((a, b) => a[1] - b[1])[0];
-    const pct = Math.round(worstScore * 100);
+    const pct = Math.round(worstScore);
     cards.push({
       priority: pct < 30 ? 'HIGH' : 'MEDIUM',
       title: `Optimize for ${worstProvider.charAt(0).toUpperCase() + worstProvider.slice(1)}`,
@@ -154,7 +154,7 @@ function generateFallbackCards(results: RunResults, brandName: string): Strategy
   const competitorEntries = Object.entries(competitorVisibility).sort((a, b) => b[1] - a[1]);
   if (competitorEntries.length > 0) {
     const [topComp, topScore] = competitorEntries[0];
-    const pct = Math.round(topScore * 100);
+    const pct = Math.round(topScore);
     cards.push({
       priority: pct > 60 ? 'HIGH' : 'MEDIUM',
       title: `Counter ${topComp} Dominance`,

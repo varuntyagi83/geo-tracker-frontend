@@ -58,7 +58,7 @@ import { VisibilityReport } from '@/components/VisibilityReport';
 import { BrandHistory } from '@/components/BrandHistory';
 import { PreviousRuns } from '@/components/PreviousRuns';
 import { PDFReport } from '@/components/PDFReport/index';
-import { exportReportToPDF } from '@/lib/pdf-export';
+import { exportReportToPDF, openReportAsHTML } from '@/lib/pdf-export';
 import {
   cn,
   formatDuration,
@@ -1204,6 +1204,11 @@ function ResultsView({
     }
   };
 
+  const handleViewAsHTML = () => {
+    if (!pdfReportRef.current) return;
+    openReportAsHTML(pdfReportRef.current, brandName);
+  };
+
   const competitorStats = useMemo(() => {
     const counts: Record<string, number> = {};
     results.results.forEach(r => {
@@ -1271,6 +1276,13 @@ function ResultsView({
           Back to Dashboard
         </button>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleViewAsHTML}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all bg-dark-700 hover:bg-dark-600 text-dark-200 border border-dark-600"
+          >
+            <Eye className="w-4 h-4" />
+            View as HTML
+          </button>
           <button
             onClick={handleDownloadPDF}
             disabled={isPdfExporting}
