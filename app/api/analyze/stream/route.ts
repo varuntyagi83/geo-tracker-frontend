@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
 
       const orchestrator = new AnalysisOrchestrator(config)
 
-      orchestrator.on('state-change', ({ from, to, timestamp }) => {
-        send('state', { from, to, timestamp })
+      orchestrator.on('state-change', ({ to }) => {
+        send('state', to)
       })
 
       orchestrator.on('crawl-progress', (progress) => {

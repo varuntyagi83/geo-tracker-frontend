@@ -1081,11 +1081,12 @@ export default function DashboardPage() {
     setSeoLog([]);
 
     const es = new EventSource(url);
+    let terminated = false;
 
     es.addEventListener('state', (e: MessageEvent) => {
       try {
-        const data = JSON.parse(e.data);
-        setSeoState(data.state ?? data);
+        const raw = JSON.parse(e.data);
+        setSeoState(typeof raw === 'string' ? raw as OrchestratorState : (raw.to ?? raw.state ?? 'initializing'));
       } catch {
         setSeoState(e.data as OrchestratorState);
       }
@@ -1102,11 +1103,12 @@ export default function DashboardPage() {
     });
 
     es.addEventListener('complete', (e: MessageEvent) => {
+      terminated = true;
       try {
         const analysis: SiteAnalysis = JSON.parse(e.data);
         setSeoAnalysis(analysis);
         setSeoState('complete');
-      } catch (err) {
+      } catch {
         setSeoError('Failed to parse crawl results.');
         setSeoState('error');
       }
@@ -1114,14 +1116,20 @@ export default function DashboardPage() {
     });
 
     es.addEventListener('fail', (e: MessageEvent) => {
-      setSeoError(e.data || 'Crawl failed. Please try again.');
+      terminated = true;
+      try {
+        const data = JSON.parse(e.data);
+        setSeoError(data.message || 'Crawl failed. Please try again.');
+      } catch {
+        setSeoError(e.data || 'Crawl failed. Please try again.');
+      }
       setSeoState('error');
       es.close();
     });
 
     es.onerror = () => {
-      if (seoState !== 'complete') {
-        setSeoError('Connection lost during crawl. Please retry.');
+      if (!terminated) {
+        setSeoError('Could not connect to the analysis server. Please retry.');
         setSeoState('error');
       }
       es.close();
