@@ -1072,7 +1072,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (phase !== 1) return;
 
-    const url = `/api/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
+    const url = `/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
 
     setSeoState('initializing');
     setSeoError(null);
