@@ -470,7 +470,7 @@ export async function deleteBrand(brandId: number): Promise<{ success: boolean; 
 export async function getRunHistory(
   companyId?: string,
   limit: number = 50,
-  sinceDays: number = 30
+  sinceDays: number = 365
 ): Promise<RunHistoryResponse> {
   const params = new URLSearchParams({
     limit: limit.toString(),

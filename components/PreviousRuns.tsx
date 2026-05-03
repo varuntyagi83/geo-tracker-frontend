@@ -34,7 +34,7 @@ export function PreviousRuns({ companyId, onSelectRun }: PreviousRunsProps) {
   const [runs, setRuns] = useState<RunHistorySummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sinceDays, setSinceDays] = useState(30);
+  const [sinceDays, setSinceDays] = useState(365);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
   // Ref to track if component is mounted (prevents state updates after unmount)
