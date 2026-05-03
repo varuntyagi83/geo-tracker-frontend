@@ -998,6 +998,11 @@ export default function DashboardPage() {
   const [seoTab, setSeoTab] = useState<'overview' | 'pages' | 'ai'>('overview');
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
 
+  // Previous-crawl cache prompt
+  const [showCachePrompt, setShowCachePrompt] = useState(false);
+  const [cachedCrawl, setCachedCrawl] = useState<{ analysis: SiteAnalysis; cachedAt: string; pages: number; depth: number } | null>(null);
+  const skipCrawlRef = useRef(false);
+
   // ==============================================
   // Phase 2 LLM visibility state
   // ==============================================
@@ -1062,6 +1067,42 @@ export default function DashboardPage() {
   };
 
   // ==============================================
+  // Phase 1 cache helpers
+  // ==============================================
+  function cacheKey(url: string): string {
+    try { return `geo_seo_cache_${new URL(url.startsWith('http') ? url : `https://${url}`).hostname}` } catch { return `geo_seo_cache_${url}` }
+  }
+
+  function loadCachedCrawl(url: string) {
+    try {
+      const raw = localStorage.getItem(cacheKey(url));
+      if (!raw) return null;
+      return JSON.parse(raw) as { analysis: SiteAnalysis; cachedAt: string; pages: number; depth: number };
+    } catch { return null; }
+  }
+
+  function saveCachedCrawl(url: string, analysis: SiteAnalysis) {
+    try {
+      localStorage.setItem(cacheKey(url), JSON.stringify({
+        analysis,
+        cachedAt: new Date().toISOString(),
+        pages: analysis.pages.length,
+        depth: crawlDepth,
+      }));
+    } catch { /* quota exceeded — silently skip */ }
+  }
+
+  function timeAgo(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 60) return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  }
+
+  // ==============================================
   // Phase 1: SEO crawl via SSE
   // ==============================================
   const crawlModeConfig = {
@@ -1072,6 +1113,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (phase !== 1) return;
+    if (skipCrawlRef.current) { skipCrawlRef.current = false; return; }
 
     const normalizedUrl = websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`;
     const url = `/analyze/stream?url=${encodeURIComponent(normalizedUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
@@ -1118,6 +1160,7 @@ export default function DashboardPage() {
         const analysis: SiteAnalysis = JSON.parse(e.data);
         setSeoAnalysis(analysis);
         setSeoState('complete');
+        saveCachedCrawl(websiteUrl, analysis);
       } catch {
         setSeoError('Failed to parse crawl results.');
         setSeoState('error');
@@ -1717,7 +1760,13 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                   <button
                     onClick={() => {
                       setShowHistory(false);
-                      setPhase(1);
+                      const cached = loadCachedCrawl(websiteUrl);
+                      if (cached) {
+                        setCachedCrawl(cached);
+                        setShowCachePrompt(true);
+                      } else {
+                        setPhase(1);
+                      }
                     }}
                     disabled={!websiteUrl || !brandName || !industry || !businessContext}
                     className={cn(
@@ -1733,6 +1782,58 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                 </div>
               </>
             )}
+          </motion.div>
+        )}
+
+        {/* ============================================================
+            CACHE PROMPT: Previous crawl found
+        ============================================================ */}
+        {phase === 0 && showCachePrompt && cachedCrawl && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto"
+          >
+            <PhaseIndicator currentPhase={1} />
+            <div className="bg-dark-800 rounded-xl border border-dark-600 p-8 text-center">
+              <div className="w-14 h-14 rounded-full bg-primary-500/15 flex items-center justify-center mx-auto mb-5">
+                <Search className="w-7 h-7 text-primary-400" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Previous crawl found</h2>
+              <p className="text-dark-400 mb-1">
+                {cachedCrawl.pages} pages crawled for <span className="text-white font-mono">{(() => { try { return new URL(websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`).hostname } catch { return websiteUrl } })()}</span>
+              </p>
+              <p className="text-dark-500 text-sm mb-8">{timeAgo(cachedCrawl.cachedAt)}</p>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    skipCrawlRef.current = true;
+                    setSeoAnalysis(cachedCrawl.analysis);
+                    setSeoState('complete');
+                    setSeoLog(['→ loaded from cache']);
+                    setShowCachePrompt(false);
+                    setCachedCrawl(null);
+                    setPhase(1);
+                  }}
+                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Use previous crawl
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCachePrompt(false);
+                    setCachedCrawl(null);
+                    setPhase(1);
+                  }}
+                  className="px-6 py-3 bg-dark-700 hover:bg-dark-600 text-dark-200 border border-dark-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Start new crawl
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
 
