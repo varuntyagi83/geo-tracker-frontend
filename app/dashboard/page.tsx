@@ -983,6 +983,8 @@ export default function DashboardPage() {
   const [businessContext, setBusinessContext] = useState('');
   const [questionCount, setQuestionCount] = useState(15);
   const [crawlMode, setCrawlMode] = useState<'quick' | 'standard' | 'deep'>('standard');
+  const [maxPages, setMaxPages] = useState(25);
+  const [crawlDepth, setCrawlDepth] = useState(2);
 
   // ==============================================
   // Phase 1 SEO crawl state
@@ -1070,9 +1072,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (phase !== 1) return;
 
-    const { maxPages, maxDepth } = crawlModeConfig[crawlMode];
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const url = `${API_BASE}/api/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${maxDepth}&includeSitemap=false`;
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const url = `${API_BASE}/api/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
 
     setSeoState('initializing');
     setSeoError(null);
@@ -1626,16 +1627,20 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                     />
                   </div>
 
-                  {/* Crawl Mode */}
-                  <div>
-                    <label className="block text-sm font-medium mb-3">Crawl Mode</label>
+                  {/* Crawl Settings */}
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium">Crawl Mode</label>
                     <div className="grid grid-cols-3 gap-3">
                       {(['quick', 'standard', 'deep'] as const).map((cm) => {
                         const cfg = crawlModeConfig[cm];
                         return (
                           <button
                             key={cm}
-                            onClick={() => setCrawlMode(cm)}
+                            onClick={() => {
+                              setCrawlMode(cm);
+                              setMaxPages(cfg.maxPages);
+                              setCrawlDepth(cfg.maxDepth);
+                            }}
                             className={cn(
                               'p-4 rounded-lg border-2 transition-all text-left',
                               crawlMode === cm
@@ -1650,6 +1655,44 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Max Pages slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-dark-300">Max Pages</span>
+                        <span className="text-sm font-semibold text-primary-400">{maxPages} pages</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={50}
+                        value={maxPages}
+                        onChange={(e) => setMaxPages(parseInt(e.target.value))}
+                        className="w-full accent-primary-500"
+                      />
+                      <div className="flex justify-between text-xs text-dark-500 mt-1">
+                        <span>1</span><span>10</span><span>25</span><span>50</span>
+                      </div>
+                    </div>
+
+                    {/* Crawl Depth slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-dark-300">Crawl Depth</span>
+                        <span className="text-sm font-semibold text-primary-400">depth {crawlDepth}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={3}
+                        value={crawlDepth}
+                        onChange={(e) => setCrawlDepth(parseInt(e.target.value))}
+                        className="w-full accent-primary-500"
+                      />
+                      <div className="flex justify-between text-xs text-dark-500 mt-1">
+                        <span>Shallow</span><span>Medium</span><span>Deep</span>
+                      </div>
                     </div>
                   </div>
 
