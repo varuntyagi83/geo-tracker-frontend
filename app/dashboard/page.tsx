@@ -1067,29 +1067,59 @@ export default function DashboardPage() {
   };
 
   // ==============================================
-  // Phase 1 cache helpers
+  // Phase 1 cache helpers (Postgres-backed)
   // ==============================================
-  function cacheKey(url: string): string {
-    try { return `geo_seo_cache_${new URL(url.startsWith('http') ? url : `https://${url}`).hostname}` } catch { return `geo_seo_cache_${url}` }
+  function normalisedDomain(url: string): string {
+    try { return new URL(url.startsWith('http') ? url : `https://${url}`).hostname } catch { return url }
   }
 
-  function loadCachedCrawl(url: string) {
+  async function loadCachedCrawl(url: string) {
+    const domain = normalisedDomain(url);
     try {
-      const raw = localStorage.getItem(cacheKey(url));
-      if (!raw) return null;
-      return JSON.parse(raw) as { analysis: SiteAnalysis; cachedAt: string; pages: number; depth: number };
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+      const res = await fetch(`${API_BASE}/api/seo/analyses?domain=${encodeURIComponent(domain)}&limit=1`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const row = data.analyses?.[0];
+      if (!row) return null;
+      // Reconstruct a minimal SiteAnalysis compatible with the frontend type
+      const analysis: SiteAnalysis = {
+        id: row.id,
+        domain: row.domain,
+        startUrl: row.start_url,
+        crawlConfig: { startUrl: row.start_url, maxPages: row.pages_crawled, maxDepth: 2, respectRobotsTxt: false, includeSitemap: false, concurrency: 3, timeout: 15000, generateAiRecommendations: true },
+        crawledAt: new Date(row.created_at),
+        completedAt: new Date(row.created_at),
+        scores: { overall: row.overall_score, seo: row.seo_score, aeo: row.aeo_score },
+        pages: row.pages ?? [],
+        siteWideIssues: row.site_wide_issues ?? { critical: [], warnings: [], opportunities: [] },
+        stats: row.stats ?? { totalPages: row.pages_crawled, avgLoadTime: 0, pagesWithoutH1: 0, pagesWithoutDescription: 0, imagesWithoutAlt: 0, pagesWithStructuredData: 0, pagesWithFaqSchema: 0 },
+        aiRecommendations: row.ai_recommendations ?? undefined,
+      };
+      return { analysis, cachedAt: row.created_at, pages: row.pages_crawled, depth: 2 };
     } catch { return null; }
   }
 
-  function saveCachedCrawl(url: string, analysis: SiteAnalysis) {
+  async function saveCachedCrawl(url: string, analysis: SiteAnalysis) {
     try {
-      localStorage.setItem(cacheKey(url), JSON.stringify({
-        analysis,
-        cachedAt: new Date().toISOString(),
-        pages: analysis.pages.length,
-        depth: crawlDepth,
-      }));
-    } catch { /* quota exceeded — silently skip */ }
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+      await fetch(`${API_BASE}/api/seo/analyses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domain: normalisedDomain(url),
+          start_url: analysis.startUrl,
+          overall_score: analysis.scores.overall,
+          seo_score: analysis.scores.seo,
+          aeo_score: analysis.scores.aeo,
+          pages_crawled: analysis.pages.length,
+          stats: analysis.stats,
+          site_wide_issues: analysis.siteWideIssues,
+          pages: analysis.pages,
+          ai_recommendations: analysis.aiRecommendations ?? null,
+        }),
+      });
+    } catch { /* non-fatal — analysis already shown to user */ }
   }
 
   function timeAgo(iso: string): string {
@@ -1758,9 +1788,9 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                   </div>
 
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setShowHistory(false);
-                      const cached = loadCachedCrawl(websiteUrl);
+                      const cached = await loadCachedCrawl(websiteUrl);
                       if (cached) {
                         setCachedCrawl(cached);
                         setShowCachePrompt(true);
