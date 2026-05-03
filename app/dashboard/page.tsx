@@ -73,6 +73,7 @@ import { SiteOverview } from '@/components/seo/site-overview';
 import { PageList } from '@/components/seo/page-list';
 import { AIRecommendationsPanel } from '@/components/seo/ai-recommendations';
 import { CrawlProgressPanel } from '@/components/seo/crawl-progress';
+import { PageDetailPanel } from '@/components/seo/page-detail';
 import type { SiteAnalysis, PageAnalysis } from '@/types/seo/analysis';
 import type { OrchestratorState } from '@/types/seo/orchestrator';
 
@@ -1086,10 +1087,19 @@ export default function DashboardPage() {
     es.addEventListener('state', (e: MessageEvent) => {
       try {
         const raw = JSON.parse(e.data);
-        setSeoState(typeof raw === 'string' ? raw as OrchestratorState : (raw.to ?? raw.state ?? 'initializing'));
+        const state = typeof raw === 'string' ? raw as OrchestratorState : (raw.to ?? raw.state ?? 'initializing');
+        setSeoState(state);
+        setSeoLog(prev => [...prev, `→ ${state}`]);
       } catch {
         setSeoState(e.data as OrchestratorState);
       }
+    });
+
+    es.addEventListener('page', (e: MessageEvent) => {
+      try {
+        const { url: pageUrl, scores } = JSON.parse(e.data);
+        setSeoLog(prev => [...prev, `analyzed: ${pageUrl} (${scores?.overall ?? '?'})`]);
+      } catch {}
     });
 
     es.addEventListener('progress', (e: MessageEvent) => {
@@ -1824,11 +1834,19 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                     <SiteOverview analysis={seoAnalysis} />
                   )}
                   {seoTab === 'pages' && (
-                    <PageList
-                      pages={seoAnalysis.pages}
-                      onSelect={(page: PageAnalysis) => setSelectedPage(page.url)}
-                      selectedUrl={selectedPage ?? undefined}
-                    />
+                    <>
+                      <PageList
+                        pages={seoAnalysis.pages}
+                        onSelect={(page: PageAnalysis) => setSelectedPage(prev => prev === page.url ? null : page.url)}
+                        selectedUrl={selectedPage ?? undefined}
+                      />
+                      {selectedPage && (() => {
+                        const page = seoAnalysis.pages.find(p => p.url === selectedPage);
+                        return page ? (
+                          <PageDetailPanel page={page} onClose={() => setSelectedPage(null)} />
+                        ) : null;
+                      })()}
+                    </>
                   )}
                   {seoTab === 'ai' && (
                     seoAnalysis.aiRecommendations ? (

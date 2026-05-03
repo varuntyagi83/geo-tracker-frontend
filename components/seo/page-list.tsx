@@ -50,11 +50,11 @@ export function PageList({ pages, onSelect, selectedUrl }: PageListProps) {
       <button
         onClick={() => toggleSort(col)}
         className={`flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
-          active ? 'text-cyan-500 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+          active ? 'text-primary-400' : 'text-dark-400 hover:text-dark-200'
         }`}
       >
         {label}
-        <span className="text-slate-300 dark:text-slate-600">{active ? (dir === 'asc' ? '↑' : '↓') : '↕'}</span>
+        <span className="text-dark-500">{active ? (dir === 'asc' ? '↑' : '↓') : '↕'}</span>
       </button>
     )
   }
@@ -70,27 +70,27 @@ export function PageList({ pages, onSelect, selectedUrl }: PageListProps) {
               onClick={() => setFilter(f)}
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 filter === f
-                  ? 'border-cyan-500 text-cyan-500 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/30'
-                  : 'border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                  ? 'border-primary-500 text-primary-400 bg-primary-500/10'
+                  : 'border-dark-600 text-dark-400 hover:border-dark-500 hover:text-dark-300'
               }`}
             >
               {f === 'all' ? `All (${pages.length})` : `Has Issues (${pages.filter(p => issueCount(p) > 0).length})`}
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-400 dark:text-slate-500 italic">Click a row to see detailed analysis</p>
+        <p className="text-xs text-dark-400 italic">Click a row to see detailed analysis</p>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-lg border border-dark-600">
         <table className="w-full text-sm">
-          <thead className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
+          <thead className="border-b border-dark-600 bg-dark-700">
             <tr>
               <th className="text-left px-4 py-2.5"><SortHeader label="URL" col="url" /></th>
               <th className="text-right px-3 py-2.5"><SortHeader label="Overall" col="overall" /></th>
               <th className="text-right px-3 py-2.5"><SortHeader label="SEO" col="seo" /></th>
               <th className="text-right px-3 py-2.5"><SortHeader label="AEO" col="aeo" /></th>
-              <th className="text-right px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Issues</th>
+              <th className="text-right px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-dark-400">Issues</th>
               <th className="w-8" />
             </tr>
           </thead>
@@ -103,15 +103,15 @@ export function PageList({ pages, onSelect, selectedUrl }: PageListProps) {
                   key={page.url}
                   onClick={() => onSelect(page)}
                   title="Click to see detailed analysis"
-                  className={`border-b border-slate-100 dark:border-slate-800/50 cursor-pointer transition-colors group ${
+                  className={`border-b border-dark-700/50 cursor-pointer transition-colors group ${
                     isSelected
-                      ? 'bg-cyan-50 dark:bg-cyan-950/20 border-l-2 border-l-cyan-500'
+                      ? 'bg-primary-500/10 border-l-2 border-l-primary-500'
                       : i % 2 === 0
-                        ? 'bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/30'
-                        : 'bg-slate-50/50 dark:bg-slate-900/20 hover:bg-slate-100 dark:hover:bg-slate-800/30'
+                        ? 'bg-transparent hover:bg-dark-700/40'
+                        : 'bg-dark-700/20 hover:bg-dark-700/40'
                   }`}
                 >
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600 dark:text-slate-300 max-w-xs truncate">
+                  <td className="px-4 py-2.5 font-mono text-xs text-dark-300 max-w-xs truncate">
                     {page.url.replace(/^https?:\/\//, '')}
                     {page.depth === 0 && (
                       <Badge variant="outline" className="ml-2 text-[10px] border-cyan-400 dark:border-cyan-800 text-cyan-600 dark:text-cyan-600 py-0">home</Badge>
@@ -133,7 +133,7 @@ export function PageList({ pages, onSelect, selectedUrl }: PageListProps) {
                       <span className="text-xs text-emerald-500">✓</span>
                     )}
                   </td>
-                  <td className="pr-3 text-slate-300 dark:text-slate-700 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors text-xs">
+                  <td className="pr-3 text-dark-600 group-hover:text-dark-400 transition-colors text-xs">
                     ›
                   </td>
                 </tr>
@@ -143,7 +143,7 @@ export function PageList({ pages, onSelect, selectedUrl }: PageListProps) {
         </table>
 
         {sorted.length === 0 && (
-          <div className="py-8 text-center text-slate-400 dark:text-slate-600 text-sm">No pages match the filter</div>
+          <div className="py-8 text-center text-dark-400 text-sm">No pages match the filter</div>
         )}
       </div>
     </div>
