@@ -32,6 +32,7 @@ import {
   History,
   PlusCircle,
   Download,
+  Layers,
 } from 'lucide-react';
 
 import {
@@ -68,6 +69,12 @@ import {
   parseQueriesFromText,
 } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
+import { SiteOverview } from '@/components/seo/site-overview';
+import { PageList } from '@/components/seo/page-list';
+import { AIRecommendationsPanel } from '@/components/seo/ai-recommendations';
+import { CrawlProgressPanel } from '@/components/seo/crawl-progress';
+import type { SiteAnalysis, PageAnalysis } from '@/types/seo/analysis';
+import type { OrchestratorState } from '@/types/seo/orchestrator';
 
 // ==============================================
 // CONSTANTS
@@ -200,7 +207,6 @@ function Header() {
     router.push('/');
   };
 
-  // Check if user has admin access
   const canAccessAdmin = user?.permissions?.can_access_admin || user?.role === 'admin' || user?.role === 'demo';
 
   return (
@@ -252,754 +258,40 @@ function Header() {
 }
 
 // ==============================================
-// COMPONENT: Step Indicator
+// COMPONENT: Phase Indicator
 // ==============================================
-function StepIndicator({ currentStep, steps }: { currentStep: number; steps: string[] }) {
+function PhaseIndicator({ currentPhase }: { currentPhase: number }) {
+  const phases = ['Setup', 'Structural', 'LLM Visibility', 'Combined Report'];
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
-      {steps.map((step, index) => (
-        <div key={step} className="flex items-center">
+      {phases.map((phase, index) => (
+        <div key={phase} className="flex items-center">
           <div
             className={cn(
               'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all',
-              index < currentStep
+              index < currentPhase
                 ? 'bg-primary-500 text-white'
-                : index === currentStep
+                : index === currentPhase
                 ? 'bg-primary-500/20 text-primary-500 border-2 border-primary-500'
                 : 'bg-dark-700 text-dark-400'
             )}
           >
-            {index < currentStep ? <CheckCircle2 className="w-4 h-4" /> : index + 1}
+            {index < currentPhase ? <CheckCircle2 className="w-4 h-4" /> : index + 1}
           </div>
           <span
             className={cn(
               'ml-2 text-sm hidden sm:inline',
-              index <= currentStep ? 'text-white' : 'text-dark-400'
+              index <= currentPhase ? 'text-white' : 'text-dark-400'
             )}
           >
-            {step}
+            {phase}
           </span>
-          {index < steps.length - 1 && (
+          {index < phases.length - 1 && (
             <ChevronRight className="w-4 h-4 mx-2 text-dark-500" />
           )}
         </div>
       ))}
     </div>
-  );
-}
-
-// ==============================================
-// COMPONENT: Company Setup Form
-// ==============================================
-function CompanySetup({
-  onNext,
-  formData,
-  setFormData,
-}: {
-  onNext: () => void;
-  formData: { brandName: string; industry: string; businessContext: string; questionCount: number };
-  setFormData: (data: { brandName: string; industry: string; businessContext: string; questionCount: number }) => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="max-w-xl mx-auto"
-    >
-      <div className="text-center mb-8">
-        <Building2 className="w-12 h-12 text-primary-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Set Up Your Brand</h2>
-        <p className="text-dark-400">Tell us about your company so we can track your visibility</p>
-      </div>
-
-      <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Brand Name *</label>
-            <input
-              type="text"
-              value={formData.brandName}
-              onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
-              placeholder="e.g., Nike"
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-            <p className="text-xs text-dark-400 mt-1">
-              This is the brand name we&apos;ll look for in AI responses
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Industry *</label>
-            <select
-              value={formData.industry}
-              onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              <option value="">Select your industry</option>
-              {INDUSTRIES.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industry}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Business Context *</label>
-            <textarea
-              value={formData.businessContext}
-              onChange={(e) => setFormData({ ...formData, businessContext: e.target.value })}
-              placeholder="e.g., Premium German brand specializing in natural, high-quality dietary supplements. Known for organic vitamins, minerals, and plant-based formulas. Target audience: health-conscious consumers seeking clean-label products."
-              rows={4}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-            />
-            <p className="text-xs text-dark-400 mt-1">
-              Describe your brand&apos;s positioning, products, target audience, and unique selling points
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Number of Questions to Generate</label>
-            <select
-              value={formData.questionCount}
-              onChange={(e) => setFormData({ ...formData, questionCount: parseInt(e.target.value) })}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              <option value={5}>5 questions</option>
-              <option value={10}>10 questions</option>
-              <option value={15}>15 questions</option>
-              <option value={20}>20 questions</option>
-              <option value={25}>25 questions (maximum)</option>
-            </select>
-            <p className="text-xs text-dark-400 mt-1">
-              AI will generate this many targeted questions for visibility analysis
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={onNext}
-          disabled={!formData.brandName || !formData.industry || !formData.businessContext}
-          className={cn(
-            'w-full mt-6 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
-            formData.brandName && formData.industry && formData.businessContext
-              ? 'bg-primary-500 hover:bg-primary-600 text-white'
-              : 'bg-dark-600 text-dark-400 cursor-not-allowed'
-          )}
-        >
-          Continue <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-// ==============================================
-// COMPONENT: Query Configuration
-// ==============================================
-function QueryConfig({
-  onStart,
-  onBack,
-  queries,
-  setQueries,
-  industry,
-  brandName,
-  businessContext,
-  questionCount,
-  language,
-  market,
-  isStarting,
-}: {
-  onStart: (queries: Query[]) => void;
-  onBack: () => void;
-  queries: Query[];
-  setQueries: (queries: Query[]) => void;
-  industry: string;
-  brandName: string;
-  businessContext: string;
-  questionCount: number;
-  language: string;
-  market: string;
-  isStarting: boolean;
-}) {
-  const [queriesText, setQueriesText] = useState(queries.map((q) => q.question).join('\n'));
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<'manual' | 'sheets'>('manual');
-  const [sheetPromptsLoaded, setSheetPromptsLoaded] = useState(false);
-  const [sheetError, setSheetError] = useState<string | null>(null);
-
-  const handleSheetPromptsLoaded = (prompts: SheetPrompt[], total: number) => {
-    const questionsText = prompts.map(p => p.question).join('\n');
-    setQueriesText(questionsText);
-    setSheetPromptsLoaded(true);
-    setSheetError(null);
-  };
-
-  const handleSheetError = (error: string) => {
-    setSheetError(error);
-    setSheetPromptsLoaded(false);
-  };
-
-  const handleLoadSamples = () => {
-    const samples = getSampleQueriesForIndustry(industry, language).slice(0, questionCount);
-    setQueriesText(samples.join('\n'));
-    setGenerationError(null);
-  };
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setGenerationError(null);
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-    const marketNames: Record<string, string> = {
-      'DE': 'Germany',
-      'US': 'United States',
-      'GB': 'United Kingdom',
-      'UK': 'United Kingdom',
-      'FR': 'France',
-      'ES': 'Spain',
-      'IT': 'Italy',
-      'AT': 'Austria',
-      'CH': 'Switzerland',
-      'NL': 'Netherlands',
-      'BE': 'Belgium',
-      'PL': 'Poland',
-      'SE': 'Sweden',
-      'DK': 'Denmark',
-      'NO': 'Norway',
-      'FI': 'Finland',
-      'PT': 'Portugal',
-      'AU': 'Australia',
-      'CA': 'Canada',
-      'IN': 'India',
-      'JP': 'Japan',
-      'BR': 'Brazil',
-      'MX': 'Mexico',
-      'KR': 'South Korea',
-      'CN': 'China',
-      'SG': 'Singapore',
-      'AE': 'United Arab Emirates',
-      'SA': 'Saudi Arabia',
-      'ZA': 'South Africa',
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/queries/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          company_name: brandName,
-          industry: industry,
-          description: businessContext,
-          language: language,
-          count: questionCount,
-          target_market: marketNames[market] || market,
-          provider: 'auto',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Generation failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.queries && data.queries.length > 0) {
-        const questionTexts = data.queries.map((q: { question: string }) => q.question);
-        setQueriesText(questionTexts.join('\n'));
-
-        if (data.generated_by === 'fallback') {
-          setGenerationError('Note: Using template queries. Check API keys for AI generation.');
-        }
-      } else {
-        throw new Error('No queries returned from API');
-      }
-    } catch (err) {
-      console.error('AI generation error:', err);
-      setGenerationError(err instanceof Error ? err.message : 'AI generation failed');
-      const samples = getSampleQueriesForIndustry(industry, language).slice(0, questionCount);
-      setQueriesText(samples.join('\n'));
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleStartAnalysis = () => {
-    const parsed = parseQueriesFromText(queriesText);
-    setQueries(parsed);
-    onStart(parsed);  // Pass parsed queries directly to avoid async state issue
-  };
-
-  const currentQueryCount = queriesText.split('\n').filter((l) => l.trim()).length;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto"
-    >
-      <div className="text-center mb-8">
-        <MessageSquare className="w-12 h-12 text-primary-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Generate & Review Queries</h2>
-        <p className="text-dark-400">AI will generate questions based on your brand context</p>
-      </div>
-
-      <div className="bg-dark-800/50 rounded-xl p-4 border border-dark-700 mb-4">
-        <div className="text-xs text-dark-400 mb-2">Generating queries for:</div>
-        <div className="space-y-1">
-          <div className="text-sm"><span className="text-dark-400">Brand:</span> <span className="text-white font-medium">{brandName}</span></div>
-          <div className="text-sm"><span className="text-dark-400">Industry:</span> <span className="text-white">{industry}</span></div>
-          <div className="text-sm"><span className="text-dark-400">Context:</span> <span className="text-dark-300">{businessContext.length > 100 ? businessContext.substring(0, 100) + '...' : businessContext}</span></div>
-          <div className="text-sm"><span className="text-dark-400">Target:</span> <span className="text-white">{questionCount} questions in {language.toUpperCase()}</span></div>
-        </div>
-      </div>
-
-      <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-        {/* Input Mode Toggle */}
-        <div className="flex items-center gap-2 mb-4 p-1 bg-dark-700 rounded-lg w-fit">
-          <button
-            onClick={() => setInputMode('manual')}
-            className={cn(
-              'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              inputMode === 'manual'
-                ? 'bg-primary-500 text-white'
-                : 'text-dark-400 hover:text-white'
-            )}
-          >
-            Manual Entry
-          </button>
-          <button
-            onClick={() => setInputMode('sheets')}
-            className={cn(
-              'px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1',
-              inputMode === 'sheets'
-                ? 'bg-primary-500 text-white'
-                : 'text-dark-400 hover:text-white'
-            )}
-          >
-            <FileText className="w-4 h-4" />
-            Import from Sheets
-          </button>
-        </div>
-
-        {inputMode === 'sheets' ? (
-          <div className="mb-4">
-            <SheetInput
-              onPromptsLoaded={handleSheetPromptsLoaded}
-              onError={handleSheetError}
-            />
-            {sheetError && (
-              <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded">
-                {sheetError}
-              </div>
-            )}
-            {sheetPromptsLoaded && (
-              <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-400">
-                Prompts loaded from Google Sheet. You can review and edit them below.
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center justify-between mb-4">
-            <label className="text-sm font-medium">
-              Questions ({currentQueryCount} / {questionCount})
-            </label>
-            <div className="flex gap-2 items-center">
-              <button
-                onClick={handleLoadSamples}
-                className="text-xs px-3 py-1.5 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
-              >
-                Load Samples
-              </button>
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="text-xs px-3 py-1.5 bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 rounded-md transition-colors flex items-center gap-1"
-              >
-                {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                AI Generate ({questionCount})
-              </button>
-            </div>
-          </div>
-        )}
-
-        <textarea
-          value={queriesText}
-          onChange={(e) => setQueriesText(e.target.value)}
-          placeholder={language === 'de'
-            ? "Geben Sie eine Frage pro Zeile ein, z.B.:\n\nWas sind die besten Vitamin D Nahrungsergänzungsmittel?\nVergleiche natürliche Supplement-Marken\nWelches Magnesium hilft beim Schlafen?"
-            : "Enter one question per line, e.g.:\n\nWhat are the best vitamin D supplements?\nCompare natural supplement brands\nWhich magnesium helps with sleep?"}
-          rows={12}
-          className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm resize-none"
-        />
-
-        {generationError && (
-          <div className="mt-2 text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded">
-            {generationError}
-          </div>
-        )}
-
-        <p className="text-xs text-dark-400 mt-2">
-          {inputMode === 'manual'
-            ? `Click "AI Generate" to create ${questionCount} targeted questions using your brand context. You can edit the questions before running the analysis.`
-            : 'Import prompts from your Google Sheet, then review and edit them as needed.'}
-        </p>
-
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onBack}
-            className="px-6 py-3 bg-dark-700 hover:bg-dark-600 rounded-lg font-medium transition-colors"
-          >
-            Back
-          </button>
-          <button
-            onClick={handleStartAnalysis}
-            disabled={currentQueryCount === 0 || isStarting}
-            className={cn(
-              'flex-1 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
-              currentQueryCount > 0 && !isStarting
-                ? 'bg-primary-500 hover:bg-primary-600 text-white'
-                : 'bg-dark-600 text-dark-400 cursor-not-allowed'
-            )}
-          >
-            {isStarting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Starting...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" /> Start Analysis ({currentQueryCount} queries)
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ==============================================
-// COMPONENT: Provider & Settings Configuration
-// ==============================================
-function ProviderConfig({
-  onNext,
-  onBack,
-  providers,
-  setProviders,
-  mode,
-  setMode,
-  market,
-  setMarket,
-  language,
-  setLanguage,
-  openaiModel,
-  setOpenaiModel,
-  geminiModel,
-  setGeminiModel,
-  perplexityModel,
-  setPerplexityModel,
-  anthropicModel,
-  setAnthropicModel,
-}: {
-  onNext: () => void;
-  onBack: () => void;
-  providers: Provider[];
-  setProviders: (providers: Provider[]) => void;
-  mode: Mode;
-  setMode: (mode: Mode) => void;
-  market: string;
-  setMarket: (market: string) => void;
-  language: string;
-  setLanguage: (lang: string) => void;
-  openaiModel: string;
-  setOpenaiModel: (model: string) => void;
-  geminiModel: string;
-  setGeminiModel: (model: string) => void;
-  perplexityModel: string;
-  setPerplexityModel: (model: string) => void;
-  anthropicModel: string;
-  setAnthropicModel: (model: string) => void;
-}) {
-  const toggleProvider = (provider: Provider) => {
-    if (providers.includes(provider)) {
-      if (providers.length > 1) {
-        setProviders(providers.filter((p) => p !== provider));
-      }
-    } else {
-      setProviders([...providers, provider]);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto"
-    >
-      <div className="text-center mb-8">
-        <Settings className="w-12 h-12 text-primary-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Configure Analysis</h2>
-        <p className="text-dark-400">Select AI providers, models, region, and language</p>
-      </div>
-
-      <div className="space-y-6">
-        <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-          <label className="block text-sm font-medium mb-4 flex items-center gap-2">
-            <span className="text-2xl">🤖</span> AI Providers & Models
-          </label>
-          <div className="space-y-3">
-            {PROVIDER_OPTIONS.map((provider) => (
-              <div key={provider.id} className="space-y-2">
-                <button
-                  onClick={() => toggleProvider(provider.id)}
-                  className={cn(
-                    'w-full p-4 rounded-lg border-2 transition-all text-left flex items-center gap-4',
-                    providers.includes(provider.id)
-                      ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-dark-600 hover:border-dark-500'
-                  )}
-                >
-                  <span className="text-2xl">{provider.icon}</span>
-                  <div className="flex-1">
-                    <div className="font-medium">{provider.name}</div>
-                    <div className="text-sm text-dark-400">
-                      {provider.id === 'openai'
-                        ? provider.models.find(m => m.id === openaiModel)?.name || openaiModel
-                        : provider.id === 'gemini'
-                        ? provider.models.find(m => m.id === geminiModel)?.name || geminiModel
-                        : provider.id === 'perplexity'
-                        ? provider.models.find(m => m.id === perplexityModel)?.name || perplexityModel
-                        : provider.models.find(m => m.id === anthropicModel)?.name || anthropicModel}
-                    </div>
-                    {(provider as any).description && (
-                      <div className="text-xs text-dark-500 mt-0.5">{(provider as any).description}</div>
-                    )}
-                  </div>
-                  <div
-                    className={cn(
-                      'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
-                      providers.includes(provider.id)
-                        ? 'border-primary-500 bg-primary-500'
-                        : 'border-dark-500'
-                    )}
-                  >
-                    {providers.includes(provider.id) && (
-                      <CheckCircle2 className="w-3 h-3 text-white" />
-                    )}
-                  </div>
-                </button>
-
-                {providers.includes(provider.id) && (
-                  <div className="ml-12 pl-4 border-l-2 border-primary-500/30">
-                    <label className="block text-xs text-dark-400 mb-1">Select Model</label>
-                    <select
-                      value={
-                        provider.id === 'openai' ? openaiModel :
-                        provider.id === 'gemini' ? geminiModel :
-                        provider.id === 'perplexity' ? perplexityModel :
-                        anthropicModel
-                      }
-                      onChange={(e) => {
-                        if (provider.id === 'openai') {
-                          setOpenaiModel(e.target.value);
-                        } else if (provider.id === 'gemini') {
-                          setGeminiModel(e.target.value);
-                        } else if (provider.id === 'perplexity') {
-                          setPerplexityModel(e.target.value);
-                        } else {
-                          setAnthropicModel(e.target.value);
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {provider.models.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-dark-400 mt-3">
-            {providers.length} provider(s) selected
-          </p>
-        </div>
-
-        <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-          <label className="block text-sm font-medium mb-4 flex items-center gap-2">
-            <Globe2 className="w-5 h-5 text-primary-500" /> Region & Language
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-dark-400 mb-2">Market / Country</label>
-              <select
-                value={market}
-                onChange={(e) => setMarket(e.target.value)}
-                className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {MARKETS.map((m) => (
-                  <option key={m.code} value={m.code}>
-                    {m.name} ({m.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-dark-400 mb-2">Language</label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.name} ({l.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-          <label className="block text-sm font-medium mb-4 flex items-center gap-2">
-            <Search className="w-5 h-5 text-primary-500" /> Knowledge Source
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setMode('provider_web')}
-              className={cn(
-                'p-4 rounded-lg border-2 transition-all text-left',
-                mode === 'provider_web'
-                  ? 'border-primary-500 bg-primary-500/10'
-                  : 'border-dark-600 hover:border-dark-500'
-              )}
-            >
-              <div className="font-medium flex items-center gap-2">
-                <Globe className="w-4 h-4" /> Web Search
-              </div>
-              <div className="text-xs text-dark-400 mt-1">Uses live web data (recommended)</div>
-            </button>
-            <button
-              onClick={() => setMode('internal')}
-              className={cn(
-                'p-4 rounded-lg border-2 transition-all text-left',
-                mode === 'internal'
-                  ? 'border-primary-500 bg-primary-500/10'
-                  : 'border-dark-600 hover:border-dark-500'
-              )}
-            >
-              <div className="font-medium flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Internal Knowledge
-              </div>
-              <div className="text-xs text-dark-400 mt-1">Model&apos;s training data only</div>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onBack}
-            className="px-6 py-3 bg-dark-700 hover:bg-dark-600 rounded-lg font-medium transition-colors"
-          >
-            Back
-          </button>
-          <button
-            onClick={onNext}
-            disabled={providers.length === 0}
-            className={cn(
-              'flex-1 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
-              providers.length > 0
-                ? 'bg-primary-500 hover:bg-primary-600 text-white'
-                : 'bg-dark-600 text-dark-400 cursor-not-allowed'
-            )}
-          >
-            Continue <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ==============================================
-// COMPONENT: Progress View
-// ==============================================
-function ProgressView({ progress }: { progress: RunProgress }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-xl mx-auto"
-    >
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Analysis in Progress</h2>
-        <p className="text-dark-400">Testing your brand visibility across AI models</p>
-      </div>
-
-      <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-        <div className="mb-6">
-          <div className="flex justify-between text-sm mb-2">
-            <span>Progress</span>
-            <span className="text-primary-500">{progress.progressPercent.toFixed(0)}%</span>
-          </div>
-          <div className="h-3 bg-dark-700 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress.progressPercent}%` }}
-              className="h-full bg-primary-500 rounded-full"
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 text-center mb-6">
-          <div className="bg-dark-700 rounded-lg p-3">
-            <div className="text-2xl font-bold text-primary-500">{progress.completedTasks}</div>
-            <div className="text-xs text-dark-400">Completed</div>
-          </div>
-          <div className="bg-dark-700 rounded-lg p-3">
-            <div className="text-2xl font-bold">{progress.totalTasks - progress.completedTasks}</div>
-            <div className="text-xs text-dark-400">Remaining</div>
-          </div>
-          <div className="bg-dark-700 rounded-lg p-3">
-            <div className="text-2xl font-bold text-red-500">{progress.failedTasks}</div>
-            <div className="text-xs text-dark-400">Failed</div>
-          </div>
-        </div>
-
-        {progress.currentQuery && (
-          <div className="bg-dark-700/50 rounded-lg p-4">
-            <div className="text-xs text-dark-400 mb-1">Currently processing:</div>
-            <div className="text-sm font-medium flex items-center gap-2">
-              <span className="text-primary-400">{progress.currentProvider}</span>
-              <span className="text-dark-500">•</span>
-              <span className="truncate">{progress.currentQuery}</span>
-            </div>
-          </div>
-        )}
-
-        {progress.estimatedRemainingSeconds && progress.estimatedRemainingSeconds > 0 && (
-          <div className="text-center text-sm text-dark-400 mt-4">
-            Estimated time remaining: {formatDuration(progress.estimatedRemainingSeconds)}
-          </div>
-        )}
-      </div>
-    </motion.div>
   );
 }
 
@@ -1161,18 +453,90 @@ function QueryResultCard({ result, brandName }: { result: QueryResult; brandName
 }
 
 // ==============================================
-// COMPONENT: Results View
+// COMPONENT: Progress View (LLM)
+// ==============================================
+function ProgressView({ progress }: { progress: RunProgress }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-xl mx-auto"
+    >
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">LLM Analysis in Progress</h2>
+        <p className="text-dark-400">Testing your brand visibility across AI models</p>
+      </div>
+
+      <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
+        <div className="mb-6">
+          <div className="flex justify-between text-sm mb-2">
+            <span>Progress</span>
+            <span className="text-primary-500">{progress.progressPercent.toFixed(0)}%</span>
+          </div>
+          <div className="h-3 bg-dark-700 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress.progressPercent}%` }}
+              className="h-full bg-primary-500 rounded-full"
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 text-center mb-6">
+          <div className="bg-dark-700 rounded-lg p-3">
+            <div className="text-2xl font-bold text-primary-500">{progress.completedTasks}</div>
+            <div className="text-xs text-dark-400">Completed</div>
+          </div>
+          <div className="bg-dark-700 rounded-lg p-3">
+            <div className="text-2xl font-bold">{progress.totalTasks - progress.completedTasks}</div>
+            <div className="text-xs text-dark-400">Remaining</div>
+          </div>
+          <div className="bg-dark-700 rounded-lg p-3">
+            <div className="text-2xl font-bold text-red-500">{progress.failedTasks}</div>
+            <div className="text-xs text-dark-400">Failed</div>
+          </div>
+        </div>
+
+        {progress.currentQuery && (
+          <div className="bg-dark-700/50 rounded-lg p-4">
+            <div className="text-xs text-dark-400 mb-1">Currently processing:</div>
+            <div className="text-sm font-medium flex items-center gap-2">
+              <span className="text-primary-400">{progress.currentProvider}</span>
+              <span className="text-dark-500">•</span>
+              <span className="truncate">{progress.currentQuery}</span>
+            </div>
+          </div>
+        )}
+
+        {progress.estimatedRemainingSeconds && progress.estimatedRemainingSeconds > 0 && (
+          <div className="text-center text-sm text-dark-400 mt-4">
+            Estimated time remaining: {formatDuration(progress.estimatedRemainingSeconds)}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ==============================================
+// COMPONENT: Results View (LLM Phase 2)
 // ==============================================
 function ResultsView({
   results,
   brandName,
   onNewRun,
   jobId,
+  onContinueToCombined,
 }: {
   results: RunResults;
   brandName: string;
   onNewRun: () => void;
   jobId?: string;
+  onContinueToCombined?: () => void;
 }) {
   const { summary } = results;
   const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources' | 'report' | 'history'>('overview');
@@ -1296,7 +660,7 @@ function ResultsView({
             {isPdfExporting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                {pdfProgress > 0 ? `${pdfProgress}% · ${pdfProgressLabel}` : 'Preparing report…'}
+                {pdfProgress > 0 ? `${pdfProgress}% · ${pdfProgressLabel}` : 'Preparing report...'}
               </>
             ) : (
               <>
@@ -1319,7 +683,7 @@ function ResultsView({
         <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="w-8 h-8 text-green-500" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Analysis Complete</h2>
+        <h2 className="text-2xl font-bold mb-2">LLM Analysis Complete</h2>
         <p className="text-dark-400">
           Analyzed {summary.totalQueries} queries across {Object.keys(summary.providerVisibility).length} providers
         </p>
@@ -1574,13 +938,21 @@ function ResultsView({
       <div className="flex justify-center gap-4 mt-8">
         <button
           onClick={onNewRun}
-          className="px-6 py-3 bg-primary-500 hover:bg-primary-600 rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="px-6 py-3 bg-dark-700 hover:bg-dark-600 rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          <RefreshCw className="w-4 h-4" /> Run New Analysis
+          <RefreshCw className="w-4 h-4" /> New Analysis
         </button>
+        {onContinueToCombined && (
+          <button
+            onClick={onContinueToCombined}
+            className="flex-1 max-w-sm px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            View Combined Report <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Hidden PDF report — rendered off-screen for html2canvas capture */}
+      {/* Hidden PDF report */}
       <PDFReport
         ref={pdfReportRef}
         results={results}
@@ -1597,16 +969,35 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
-  const [step, setStep] = useState(0);
+  // Phase state: 0=Setup, 1=Structural Baseline, 2=LLM Visibility, 3=Combined Report
+  const [phase, setPhase] = useState<0 | 1 | 2 | 3>(0);
+  const [showHistory, setShowHistory] = useState(true);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
-  // Form state
-  const [companyData, setCompanyData] = useState({
-    brandName: '',
-    industry: '',
-    businessContext: '',
-    questionCount: 15
-  });
+  // ==============================================
+  // Phase 0 form state
+  // ==============================================
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [businessContext, setBusinessContext] = useState('');
+  const [questionCount, setQuestionCount] = useState(15);
+  const [crawlMode, setCrawlMode] = useState<'quick' | 'standard' | 'deep'>('standard');
+
+  // ==============================================
+  // Phase 1 SEO crawl state
+  // ==============================================
+  const [seoAnalysis, setSeoAnalysis] = useState<SiteAnalysis | null>(null);
+  const [seoState, setSeoState] = useState<OrchestratorState>('idle');
+  const [seoProgress, setSeoProgress] = useState<any>({ completed: 0, total: 0, pagesPerSecond: 0, estimatedTimeRemaining: 0, currentUrl: '' });
+  const [seoLog, setSeoLog] = useState<string[]>([]);
+  const [seoError, setSeoError] = useState<string | null>(null);
+  const [seoTab, setSeoTab] = useState<'overview' | 'pages' | 'ai'>('overview');
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+
+  // ==============================================
+  // Phase 2 LLM visibility state
+  // ==============================================
   const [queries, setQueries] = useState<Query[]>([]);
   const [providers, setProviders] = useState<Provider[]>(['openai', 'gemini']);
   const [mode, setMode] = useState<Mode>('provider_web');
@@ -1617,49 +1008,206 @@ export default function DashboardPage() {
   const [perplexityModel, setPerplexityModel] = useState('sonar');
   const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-20250514');
 
-  // Main view mode: 'history' shows previous runs, 'new' shows the new analysis flow
-  const [viewMode, setViewMode] = useState<'history' | 'new'>('history');
+  // Phase 2 query generation state
+  const [queriesText, setQueriesText] = useState('');
+  const [isGeneratingQueries, setIsGeneratingQueries] = useState(false);
+  const [queryGenError, setQueryGenError] = useState<string | null>(null);
 
-  // Run state
+  // Phase 2 run state
   const [isStarting, setIsStarting] = useState(false);
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [progress, setProgress] = useState<RunProgress | null>(null);
-  const [results, setResults] = useState<RunResults | null>(null);
+  const [llmJobId, setLlmJobId] = useState<string | null>(null);
+  const [llmProgress, setLlmProgress] = useState<RunProgress | null>(null);
+  const [llmResults, setLlmResults] = useState<RunResults | null>(null);
+  const [llmRunning, setLlmRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ref to prevent double-submission
   const isSubmittingRef = useRef(false);
 
-  const steps = ['Brand Setup', 'Configure', 'Queries', 'Results'];
-
-  // Redirect if not authenticated
+  // ==============================================
+  // Auth + Health checks
+  // ==============================================
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
-  // Check API connection on mount
   useEffect(() => {
     let isMounted = true;
-
     checkHealth()
-      .then(() => {
-        if (isMounted) setIsConnected(true);
-      })
-      .catch(() => {
-        if (isMounted) setIsConnected(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
+      .then(() => { if (isMounted) setIsConnected(true); })
+      .catch(() => { if (isMounted) setIsConnected(false); });
+    return () => { isMounted = false; };
   }, []);
 
-  // Poll for progress when job is running
+  // ==============================================
+  // Auto-derive brand name from URL
+  // ==============================================
+  const handleUrlChange = (url: string) => {
+    setWebsiteUrl(url);
+    try {
+      const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+      const hostname = parsed.hostname.replace(/^www\./, '');
+      const parts = hostname.split('.');
+      const name = parts[0];
+      if (name) {
+        setBrandName(name.charAt(0).toUpperCase() + name.slice(1));
+      }
+    } catch {
+      // URL not yet parseable; leave brandName as-is
+    }
+  };
+
+  // ==============================================
+  // Phase 1: SEO crawl via SSE
+  // ==============================================
+  const crawlModeConfig = {
+    quick:    { maxPages: 10,  maxDepth: 1 },
+    standard: { maxPages: 25,  maxDepth: 2 },
+    deep:     { maxPages: 50,  maxDepth: 3 },
+  };
+
   useEffect(() => {
-    // Don't poll if we already have results or no job ID
-    if (!jobId || step !== 3 || results) return;
+    if (phase !== 1) return;
+
+    const { maxPages, maxDepth } = crawlModeConfig[crawlMode];
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const url = `${API_BASE}/api/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${maxDepth}&includeSitemap=false`;
+
+    setSeoState('initializing');
+    setSeoError(null);
+    setSeoAnalysis(null);
+    setSeoLog([]);
+
+    const es = new EventSource(url);
+
+    es.addEventListener('state', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        setSeoState(data.state ?? data);
+      } catch {
+        setSeoState(e.data as OrchestratorState);
+      }
+    });
+
+    es.addEventListener('progress', (e: MessageEvent) => {
+      try {
+        setSeoProgress(JSON.parse(e.data));
+      } catch {}
+    });
+
+    es.addEventListener('log', (e: MessageEvent) => {
+      setSeoLog(prev => [...prev, e.data]);
+    });
+
+    es.addEventListener('complete', (e: MessageEvent) => {
+      try {
+        const analysis: SiteAnalysis = JSON.parse(e.data);
+        setSeoAnalysis(analysis);
+        setSeoState('complete');
+      } catch (err) {
+        setSeoError('Failed to parse crawl results.');
+        setSeoState('error');
+      }
+      es.close();
+    });
+
+    es.addEventListener('fail', (e: MessageEvent) => {
+      setSeoError(e.data || 'Crawl failed. Please try again.');
+      setSeoState('error');
+      es.close();
+    });
+
+    es.onerror = () => {
+      if (seoState !== 'complete') {
+        setSeoError('Connection lost during crawl. Please retry.');
+        setSeoState('error');
+      }
+      es.close();
+    };
+
+    return () => {
+      es.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // ==============================================
+  // Phase 2: Auto-generate queries on mount
+  // ==============================================
+  useEffect(() => {
+    if (phase !== 2) return;
+    if (queriesText) return; // already generated
+
+    generateQueries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  const generateQueries = async () => {
+    setIsGeneratingQueries(true);
+    setQueryGenError(null);
+
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+    const marketNames: Record<string, string> = {
+      DE: 'Germany', US: 'United States', GB: 'United Kingdom', UK: 'United Kingdom',
+      FR: 'France', ES: 'Spain', IT: 'Italy', AT: 'Austria', CH: 'Switzerland',
+      NL: 'Netherlands', BE: 'Belgium', PL: 'Poland', SE: 'Sweden', DK: 'Denmark',
+      NO: 'Norway', FI: 'Finland', PT: 'Portugal', AU: 'Australia', CA: 'Canada',
+      IN: 'India', JP: 'Japan',
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/api/queries/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_name: brandName,
+          industry,
+          description: businessContext,
+          language,
+          count: questionCount,
+          target_market: marketNames[market] || market,
+          provider: 'auto',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.queries && data.queries.length > 0) {
+        const texts = data.queries.map((q: { question: string }) => q.question);
+        setQueriesText(texts.join('\n'));
+        if (data.generated_by === 'fallback') {
+          setQueryGenError('Note: Using template queries. Check API keys for AI generation.');
+        }
+      } else {
+        throw new Error('No queries returned');
+      }
+    } catch (err) {
+      const samples = getSampleQueriesForIndustry(industry, language).slice(0, questionCount);
+      setQueriesText(samples.join('\n'));
+      setQueryGenError(err instanceof Error ? err.message : 'AI generation failed; loaded samples instead.');
+    } finally {
+      setIsGeneratingQueries(false);
+    }
+  };
+
+  const handleLoadSamples = () => {
+    const samples = getSampleQueriesForIndustry(industry, language).slice(0, questionCount);
+    setQueriesText(samples.join('\n'));
+    setQueryGenError(null);
+  };
+
+  // ==============================================
+  // Phase 2: Poll LLM run
+  // ==============================================
+  useEffect(() => {
+    if (!llmJobId || !llmRunning || llmResults) return;
 
     let isMounted = true;
 
@@ -1667,41 +1215,35 @@ export default function DashboardPage() {
       if (!isMounted) return;
 
       try {
-        const status = await getRunStatus(jobId);
+        const status = await getRunStatus(llmJobId);
         if (!isMounted) return;
-
-        setProgress(status);
+        setLlmProgress(status);
 
         if (['completed', 'failed', 'cancelled'].includes(status.status)) {
           clearInterval(pollInterval);
+          setLlmRunning(false);
 
           if (status.status === 'completed') {
             try {
-              const runResults = await getRunResults(jobId);
+              const runResults = await getRunResults(llmJobId);
               if (isMounted) {
-                setResults(runResults);
-                setError(null);  // Clear any previous errors on success
+                setLlmResults(runResults);
+                setError(null);
               }
             } catch (resultsErr) {
-              // If we can't get results by job_id, the job completed but data wasn't persisted
-              // This is non-critical - results may still be available from in-memory cache
               console.warn('Could not fetch results by job_id:', resultsErr);
-              // Don't set error here - the job did complete successfully
             }
           } else {
             const errorMsg = status.error
               ? `Run ${status.status}: ${status.error.split('\n')[0]}`
               : `Run ${status.status}`;
-            if (isMounted) {
-              setError(errorMsg);
-            }
+            if (isMounted) setError(errorMsg);
           }
         }
       } catch (err) {
-        // Only show error if we don't have results yet
-        // If job completed but status endpoint fails (job cleaned from memory), that's ok
         clearInterval(pollInterval);
-        if (isMounted && !results) {
+        setLlmRunning(false);
+        if (isMounted && !llmResults) {
           setError(err instanceof Error ? err.message : 'Failed to get status');
         }
       }
@@ -1711,15 +1253,12 @@ export default function DashboardPage() {
       isMounted = false;
       clearInterval(pollInterval);
     };
-  }, [jobId, step, results]);
+  }, [llmJobId, llmRunning, llmResults]);
 
-  const handleStartRun = async (parsedQueries: Query[]) => {
-    // Prevent double-submission using ref (works across re-renders)
-    if (isSubmittingRef.current) {
-      return;
-    }
+  const handleStartLlmRun = async () => {
+    if (isSubmittingRef.current) return;
 
-    // Check if queries are valid
+    const parsedQueries = parseQueriesFromText(queriesText);
     if (!parsedQueries || parsedQueries.length === 0) {
       setError('No queries to analyze. Please add at least one question.');
       return;
@@ -1732,8 +1271,8 @@ export default function DashboardPage() {
     try {
       const config: RunConfig = {
         companyId: 'demo-company',
-        brandName: companyData.brandName,
-        industry: companyData.industry,
+        brandName,
+        industry,
         providers,
         openaiModel,
         geminiModel,
@@ -1746,8 +1285,9 @@ export default function DashboardPage() {
       };
 
       const response = await startRun(config);
-      setJobId(response.jobId);
-      setStep(3);
+      setLlmJobId(response.jobId);
+      setLlmRunning(true);
+      setQueries(parsedQueries);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start run');
     } finally {
@@ -1756,23 +1296,9 @@ export default function DashboardPage() {
     }
   };
 
-  const handleNewRun = () => {
-    setStep(0);
-    setViewMode('new');  // Switch to new analysis mode
-    setCompanyData({
-      brandName: '',
-      industry: '',
-      businessContext: '',
-      questionCount: 15
-    });
-    setQueries([]);
-    setJobId(null);
-    setProgress(null);
-    setResults(null);
-    setError(null);
-  };
-
-  // Handle viewing a previous run's results
+  // ==============================================
+  // Handle previous run selection
+  // ==============================================
   const handleViewPreviousRun = async (run: import('@/lib/types').RunHistorySummary) => {
     if (!run.jobId) {
       setError('This run does not have detailed results available.');
@@ -1783,20 +1309,12 @@ export default function DashboardPage() {
     setIsStarting(true);
 
     try {
-      // Load the results for this run
       const runResults = await getRunResults(run.jobId);
-
-      // Update state to show results
-      setCompanyData({
-        brandName: run.brandName || 'Unknown Brand',
-        industry: '',
-        businessContext: '',
-        questionCount: run.totalQueries || 0
-      });
-      setResults(runResults);
-      setJobId(run.jobId);
-      setStep(3);  // Go to results view
-      setViewMode('new');  // Switch out of history mode to show results
+      setBrandName(run.brandName || 'Unknown Brand');
+      setLlmResults(runResults);
+      setLlmJobId(run.jobId);
+      setPhase(2);
+      setShowHistory(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load run details');
     } finally {
@@ -1804,7 +1322,122 @@ export default function DashboardPage() {
     }
   };
 
-  // Show loading while checking auth
+  const handleNewAnalysis = () => {
+    setPhase(0);
+    setShowHistory(false);
+    setWebsiteUrl('');
+    setBrandName('');
+    setIndustry('');
+    setBusinessContext('');
+    setQuestionCount(15);
+    setCrawlMode('standard');
+    setSeoAnalysis(null);
+    setSeoState('idle');
+    setSeoError(null);
+    setQueriesText('');
+    setQueries([]);
+    setLlmJobId(null);
+    setLlmProgress(null);
+    setLlmResults(null);
+    setLlmRunning(false);
+    setError(null);
+  };
+
+  // ==============================================
+  // SEO Report helpers
+  // ==============================================
+  const openSeoReportAsHTML = (analysis: SiteAnalysis) => {
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>SEO Report - ${analysis.domain}</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
+  h1 { color: #22d3ee; } h2 { color: #a78bfa; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+  .scores { display: flex; gap: 2rem; margin: 1rem 0; }
+  .score { text-align: center; padding: 1rem; background: #1e293b; border-radius: 0.5rem; min-width: 100px; }
+  .score .val { font-size: 2rem; font-weight: 700; color: #22d3ee; }
+  .score .lbl { font-size: 0.75rem; color: #94a3b8; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th { text-align: left; padding: 0.5rem; background: #1e293b; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; }
+  td { padding: 0.5rem; border-bottom: 1px solid #1e293b; font-size: 0.875rem; }
+  .issue { padding: 0.5rem; border-radius: 0.25rem; margin: 0.25rem 0; font-size: 0.8rem; }
+  .critical { background: #450a0a; border-left: 3px solid #ef4444; }
+  .warning { background: #431407; border-left: 3px solid #f59e0b; }
+</style></head>
+<body>
+<h1>SEO &amp; AEO Report</h1>
+<p style="color:#94a3b8">Domain: <strong style="color:white">${analysis.domain}</strong> &nbsp;&bull;&nbsp; ${analysis.stats.totalPages} pages crawled</p>
+<div class="scores">
+  <div class="score"><div class="val">${analysis.scores.overall}</div><div class="lbl">Overall</div></div>
+  <div class="score"><div class="val">${analysis.scores.seo}</div><div class="lbl">SEO</div></div>
+  <div class="score"><div class="val">${analysis.scores.aeo}</div><div class="lbl">AEO</div></div>
+</div>
+<h2>Site-Wide Issues</h2>
+${[...analysis.siteWideIssues.critical, ...analysis.siteWideIssues.warnings].map(i =>
+  `<div class="issue ${i.severity}"><strong>${i.title}</strong>: ${i.description} (${i.count} pages)<br><small>${i.recommendation}</small></div>`
+).join('')}
+<h2>Pages (${analysis.pages.length})</h2>
+<table>
+<thead><tr><th>URL</th><th>Overall</th><th>SEO</th><th>AEO</th></tr></thead>
+<tbody>
+${analysis.pages.map(p => `<tr><td style="font-family:monospace;font-size:0.75rem">${p.url}</td><td>${p.scores.overall}</td><td>${p.scores.seo}</td><td>${p.scores.aeo}</td></tr>`).join('')}
+</tbody></table>
+<p style="color:#475569;font-size:0.75rem">Generated by GEO Raydar on ${new Date().toLocaleString()}</p>
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+  };
+
+  const openCombinedReportAsHTML = (seo: SiteAnalysis, llm: RunResults) => {
+    const llmVis = llm.summary.overallVisibility;
+    const composite = Math.round((llmVis * 0.40) + (seo.scores.overall * 0.40) + (seo.scores.aeo * 0.20));
+
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Combined Visibility Report - ${brandName}</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
+  h1 { color: #22d3ee; } h2 { color: #a78bfa; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-top: 2rem; }
+  .index-card { background: linear-gradient(135deg, #1e3a5f, #1e1b4b); border: 1px solid #3b82f6; border-radius: 0.75rem; padding: 2rem; text-align: center; margin: 1.5rem 0; }
+  .composite { font-size: 4rem; font-weight: 700; color: #22d3ee; }
+  .sub-scores { display: flex; gap: 2rem; justify-content: center; margin-top: 1.5rem; }
+  .sub { text-align: center; }
+  .sub .val { font-size: 1.5rem; font-weight: 700; }
+  .sub .lbl { font-size: 0.75rem; color: #94a3b8; }
+  .cyan { color: #22d3ee; } .green { color: #4ade80; } .violet { color: #a78bfa; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th { text-align: left; padding: 0.5rem; background: #1e293b; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; }
+  td { padding: 0.5rem; border-bottom: 1px solid #1e293b; font-size: 0.875rem; }
+</style></head>
+<body>
+<h1>Combined Visibility Report</h1>
+<p style="color:#94a3b8">Brand: <strong style="color:white">${brandName}</strong></p>
+<div class="index-card">
+  <p style="color:#94a3b8;font-size:0.875rem;margin-bottom:0.5rem">Visibility Index</p>
+  <div class="composite">${composite}</div>
+  <div class="sub-scores">
+    <div class="sub"><div class="val cyan">${llmVis.toFixed(1)}%</div><div class="lbl">LLM Presence</div></div>
+    <div class="sub"><div class="val green">${seo.scores.overall}</div><div class="lbl">Structural Readiness</div></div>
+    <div class="sub"><div class="val violet">${seo.scores.aeo}</div><div class="lbl">AEO Score</div></div>
+  </div>
+</div>
+<h2>Structural Baseline (${seo.domain})</h2>
+<p>Overall: ${seo.scores.overall} | SEO: ${seo.scores.seo} | AEO: ${seo.scores.aeo} | Pages crawled: ${seo.stats.totalPages}</p>
+<h2>LLM Visibility</h2>
+<p>Overall Visibility: ${llmVis.toFixed(1)}% | Queries: ${llm.summary.totalQueries} | Providers: ${Object.keys(llm.summary.providerVisibility).join(', ')}</p>
+<table><thead><tr><th>Provider</th><th>Visibility</th></tr></thead><tbody>
+${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</td><td>${v.toFixed(1)}%</td></tr>`).join('')}
+</tbody></table>
+<p style="color:#475569;font-size:0.75rem">Generated by GEO Raydar on ${new Date().toLocaleString()}</p>
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    window.open(URL.createObjectURL(blob), '_blank');
+  };
+
+  // ==============================================
+  // Guards: loading + no connection
+  // ==============================================
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1813,7 +1446,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Show connection status
   if (isConnected === false) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1831,6 +1463,24 @@ export default function DashboardPage() {
     );
   }
 
+  // ==============================================
+  // Derived values for Phase 3
+  // ==============================================
+  const llmVisibility = llmResults?.summary?.overallVisibility ?? 0;
+  const compositeScore = seoAnalysis
+    ? Math.round((llmVisibility * 0.40) + (seoAnalysis.scores.overall * 0.40) + (seoAnalysis.scores.aeo * 0.20))
+    : 0;
+
+  let seoDomain = '';
+  try {
+    seoDomain = seoAnalysis
+      ? seoAnalysis.domain
+      : new URL(websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`).hostname.replace('www.', '');
+  } catch {}
+
+  // ==============================================
+  // RENDER
+  // ==============================================
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -1844,36 +1494,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Main View Toggle - show only when not in active run */}
-        {step < 3 && (
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <button
-              onClick={() => setViewMode('history')}
-              className={cn(
-                'flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all',
-                viewMode === 'history'
-                  ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
-                  : 'bg-dark-800 text-dark-400 hover:bg-dark-700 hover:text-white border border-dark-700'
-              )}
-            >
-              <History className="w-5 h-5" />
-              Previous Runs
-            </button>
-            <button
-              onClick={() => setViewMode('new')}
-              className={cn(
-                'flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all',
-                viewMode === 'new'
-                  ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
-                  : 'bg-dark-800 text-dark-400 hover:bg-dark-700 hover:text-white border border-dark-700'
-              )}
-            >
-              <PlusCircle className="w-5 h-5" />
-              New Analysis
-            </button>
-          </div>
-        )}
-
         {/* Error display */}
         {error && (
           <div className="max-w-xl mx-auto mb-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
@@ -1884,96 +1504,741 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Previous Runs View */}
-        {viewMode === 'history' && step < 3 && (
+        {/* ============================================================
+            PHASE 0: Brand & Site Setup
+        ============================================================ */}
+        {phase === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="max-w-6xl mx-auto"
+            className="max-w-2xl mx-auto"
           >
-            <PreviousRuns
-              companyId="demo-company"
-              onSelectRun={handleViewPreviousRun}
-            />
-            {isStarting && (
-              <div className="mt-4 flex items-center justify-center gap-2 text-blue-400">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Loading run details...
-              </div>
+            {/* History / New Analysis toggle */}
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <button
+                onClick={() => setShowHistory(true)}
+                className={cn(
+                  'flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all',
+                  showHistory
+                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                    : 'bg-dark-800 text-dark-400 hover:bg-dark-700 hover:text-white border border-dark-700'
+                )}
+              >
+                <History className="w-5 h-5" />
+                Previous Runs
+              </button>
+              <button
+                onClick={() => setShowHistory(false)}
+                className={cn(
+                  'flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all',
+                  !showHistory
+                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                    : 'bg-dark-800 text-dark-400 hover:bg-dark-700 hover:text-white border border-dark-700'
+                )}
+              >
+                <PlusCircle className="w-5 h-5" />
+                New Analysis
+              </button>
+            </div>
+
+            {/* Previous Runs */}
+            {showHistory && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-6xl mx-auto"
+              >
+                <PreviousRuns
+                  companyId="demo-company"
+                  onSelectRun={handleViewPreviousRun}
+                />
+                {isStarting && (
+                  <div className="mt-4 flex items-center justify-center gap-2 text-blue-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Loading run details...
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* New Analysis Setup Form */}
+            {!showHistory && (
+              <>
+                <div className="text-center mb-8">
+                  <Globe className="w-12 h-12 text-primary-500 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold mb-2">Start New Analysis</h2>
+                  <p className="text-dark-400">Enter your website and brand details to begin</p>
+                </div>
+
+                <div className="bg-dark-800 rounded-xl p-6 border border-dark-700 space-y-5">
+                  {/* Website URL */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Website URL *</label>
+                    <input
+                      type="url"
+                      value={websiteUrl}
+                      onChange={(e) => handleUrlChange(e.target.value)}
+                      placeholder="https://yourbrand.com"
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-dark-400 mt-1">
+                      Full URL including protocol. Brand name is auto-derived from the hostname.
+                    </p>
+                  </div>
+
+                  {/* Brand Name */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Brand Name *</label>
+                    <input
+                      type="text"
+                      value={brandName}
+                      onChange={(e) => setBrandName(e.target.value)}
+                      placeholder="e.g., Acme"
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Industry */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Industry *</label>
+                    <select
+                      value={industry}
+                      onChange={(e) => setIndustry(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="">Select your industry</option>
+                      {INDUSTRIES.map((ind) => (
+                        <option key={ind} value={ind}>{ind}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Business Context */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Business Context *</label>
+                    <textarea
+                      value={businessContext}
+                      onChange={(e) => setBusinessContext(e.target.value)}
+                      placeholder="Describe your brand's positioning, products, target audience, and unique selling points..."
+                      rows={4}
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+
+                  {/* Question Count */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Number of Questions to Generate</label>
+                    <select
+                      value={questionCount}
+                      onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value={5}>5 questions</option>
+                      <option value={10}>10 questions</option>
+                      <option value={15}>15 questions</option>
+                      <option value={20}>20 questions</option>
+                      <option value={25}>25 questions (maximum)</option>
+                    </select>
+                  </div>
+
+                  {/* Crawl Mode */}
+                  <div>
+                    <label className="block text-sm font-medium mb-3">Crawl Mode</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(['quick', 'standard', 'deep'] as const).map((cm) => {
+                        const cfg = crawlModeConfig[cm];
+                        return (
+                          <button
+                            key={cm}
+                            onClick={() => setCrawlMode(cm)}
+                            className={cn(
+                              'p-4 rounded-lg border-2 transition-all text-left',
+                              crawlMode === cm
+                                ? 'border-primary-500 bg-primary-500/10'
+                                : 'border-dark-600 hover:border-dark-500'
+                            )}
+                          >
+                            <div className="font-medium capitalize">{cm}</div>
+                            <div className="text-xs text-dark-400 mt-1">
+                              {cfg.maxPages} pages, depth {cfg.maxDepth}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowHistory(false);
+                      setPhase(1);
+                    }}
+                    disabled={!websiteUrl || !brandName || !industry || !businessContext}
+                    className={cn(
+                      'w-full mt-2 px-6 py-4 rounded-lg font-semibold text-lg transition-all flex items-center justify-center gap-2',
+                      websiteUrl && brandName && industry && businessContext
+                        ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/25'
+                        : 'bg-dark-600 text-dark-400 cursor-not-allowed'
+                    )}
+                  >
+                    <Play className="w-5 h-5" />
+                    Start Analysis
+                  </button>
+                </div>
+              </>
             )}
           </motion.div>
         )}
 
-        {/* New Analysis Flow */}
-        {viewMode === 'new' && step < 3 && <StepIndicator currentStep={step} steps={steps} />}
+        {/* ============================================================
+            PHASE 1: Structural Baseline (SEO Crawl)
+        ============================================================ */}
+        {phase === 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl mx-auto"
+          >
+            <PhaseIndicator currentPhase={1} />
 
-        {/* Step content - only show when in 'new' mode or during active run */}
-        <AnimatePresence mode="wait">
-          {viewMode === 'new' && step === 0 && (
-            <CompanySetup
-              key="company"
-              formData={companyData}
-              setFormData={setCompanyData}
-              onNext={() => setStep(1)}
-            />
-          )}
+            <div className="text-center mb-8">
+              <Search className="w-12 h-12 text-primary-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Structural Baseline Crawl</h2>
+              <p className="text-dark-400">
+                Crawling <span className="text-white font-mono">{websiteUrl}</span> for SEO and AEO signals
+              </p>
+            </div>
 
-          {viewMode === 'new' && step === 1 && (
-            <ProviderConfig
-              key="providers"
-              providers={providers}
-              setProviders={setProviders}
-              mode={mode}
-              setMode={setMode}
-              market={market}
-              setMarket={setMarket}
-              language={language}
-              setLanguage={setLanguage}
-              openaiModel={openaiModel}
-              setOpenaiModel={setOpenaiModel}
-              geminiModel={geminiModel}
-              setGeminiModel={setGeminiModel}
-              perplexityModel={perplexityModel}
-              setPerplexityModel={setPerplexityModel}
-              anthropicModel={anthropicModel}
-              setAnthropicModel={setAnthropicModel}
-              onNext={() => setStep(2)}
-              onBack={() => setStep(0)}
-            />
-          )}
+            {/* Crawl in progress */}
+            {!seoAnalysis && seoState !== 'error' && (
+              <div className="bg-dark-800 rounded-xl p-6 border border-dark-700 mb-6">
+                <CrawlProgressPanel
+                  state={seoState}
+                  progress={seoProgress}
+                  log={seoLog}
+                />
+              </div>
+            )}
 
-          {viewMode === 'new' && step === 2 && (
-            <QueryConfig
-              key="queries"
-              queries={queries}
-              setQueries={setQueries}
-              industry={companyData.industry}
-              brandName={companyData.brandName}
-              businessContext={companyData.businessContext}
-              questionCount={companyData.questionCount}
-              language={language}
-              market={market}
-              onStart={handleStartRun}
-              onBack={() => setStep(1)}
-              isStarting={isStarting}
-            />
-          )}
+            {/* Crawl error */}
+            {seoState === 'error' && !seoAnalysis && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
+                  <div>
+                    <p className="text-red-400 font-medium mb-1">Crawl failed</p>
+                    <p className="text-red-300 text-sm">{seoError}</p>
+                    <button
+                      onClick={() => setPhase(1)}
+                      className="mt-3 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {step === 3 && !results && progress && (
-            <ProgressView key="progress" progress={progress} />
-          )}
+            {/* Crawl complete: show results */}
+            {seoAnalysis && (
+              <>
+                {/* Tab nav */}
+                <div className="flex gap-2 mb-6 border-b border-dark-700 pb-2">
+                  {[
+                    { id: 'overview', label: 'Overview', icon: BarChart3 },
+                    { id: 'pages', label: 'Pages', icon: FileText },
+                    { id: 'ai', label: 'AI Recommendations', icon: Zap },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSeoTab(tab.id as typeof seoTab)}
+                      className={cn(
+                        'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                        seoTab === tab.id
+                          ? 'bg-primary-500/20 text-primary-400'
+                          : 'text-dark-400 hover:text-white hover:bg-dark-700'
+                      )}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  ))}
 
-          {step === 3 && results && (
-            <ResultsView
-              key="results"
-              results={results}
-              brandName={companyData.brandName}
-              onNewRun={handleNewRun}
-              jobId={jobId || undefined}
-            />
-          )}
-        </AnimatePresence>
+                  {/* Export buttons: right-aligned */}
+                  <div className="ml-auto flex gap-2">
+                    <button
+                      onClick={() => openSeoReportAsHTML(seoAnalysis)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-dark-700 hover:bg-dark-600 text-dark-200 border border-dark-600 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View as HTML
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download PDF
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-dark-800 rounded-xl p-6 border border-dark-700 mb-6">
+                  {seoTab === 'overview' && (
+                    <SiteOverview analysis={seoAnalysis} />
+                  )}
+                  {seoTab === 'pages' && (
+                    <PageList
+                      pages={seoAnalysis.pages}
+                      onSelect={(page: PageAnalysis) => setSelectedPage(page.url)}
+                      selectedUrl={selectedPage ?? undefined}
+                    />
+                  )}
+                  {seoTab === 'ai' && (
+                    seoAnalysis.aiRecommendations ? (
+                      <AIRecommendationsPanel recommendations={seoAnalysis.aiRecommendations} />
+                    ) : (
+                      <div className="text-center py-12 text-dark-400">
+                        <Zap className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                        <p>AI recommendations were not generated for this crawl.</p>
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {/* Continue button */}
+                <button
+                  onClick={() => setPhase(2)}
+                  className="w-full px-6 py-4 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/30"
+                >
+                  Continue to LLM Visibility <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </motion.div>
+        )}
+
+        {/* ============================================================
+            PHASE 2: LLM Visibility
+        ============================================================ */}
+        {phase === 2 && !llmRunning && !llmResults && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-3xl mx-auto"
+          >
+            <PhaseIndicator currentPhase={2} />
+
+            <div className="text-center mb-8">
+              <Zap className="w-12 h-12 text-primary-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">LLM Visibility Analysis</h2>
+              <p className="text-dark-400">Configure AI providers and run the visibility analysis for <span className="text-white font-medium">{brandName}</span></p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Section 1: AI Providers */}
+              <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
+                <label className="block text-sm font-medium mb-4 flex items-center gap-2">
+                  <span className="text-2xl">🤖</span> AI Providers &amp; Models
+                </label>
+                <div className="space-y-3">
+                  {PROVIDER_OPTIONS.map((provider) => (
+                    <div key={provider.id} className="space-y-2">
+                      <button
+                        onClick={() => {
+                          if (providers.includes(provider.id)) {
+                            if (providers.length > 1) setProviders(providers.filter((p) => p !== provider.id));
+                          } else {
+                            setProviders([...providers, provider.id]);
+                          }
+                        }}
+                        className={cn(
+                          'w-full p-4 rounded-lg border-2 transition-all text-left flex items-center gap-4',
+                          providers.includes(provider.id)
+                            ? 'border-primary-500 bg-primary-500/10'
+                            : 'border-dark-600 hover:border-dark-500'
+                        )}
+                      >
+                        <span className="text-2xl">{provider.icon}</span>
+                        <div className="flex-1">
+                          <div className="font-medium">{provider.name}</div>
+                          <div className="text-sm text-dark-400">
+                            {provider.id === 'openai'
+                              ? provider.models.find(m => m.id === openaiModel)?.name || openaiModel
+                              : provider.id === 'gemini'
+                              ? provider.models.find(m => m.id === geminiModel)?.name || geminiModel
+                              : provider.id === 'perplexity'
+                              ? provider.models.find(m => m.id === perplexityModel)?.name || perplexityModel
+                              : provider.models.find(m => m.id === anthropicModel)?.name || anthropicModel}
+                          </div>
+                          {(provider as any).description && (
+                            <div className="text-xs text-dark-500 mt-0.5">{(provider as any).description}</div>
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
+                            providers.includes(provider.id)
+                              ? 'border-primary-500 bg-primary-500'
+                              : 'border-dark-500'
+                          )}
+                        >
+                          {providers.includes(provider.id) && (
+                            <CheckCircle2 className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                      </button>
+
+                      {providers.includes(provider.id) && (
+                        <div className="ml-12 pl-4 border-l-2 border-primary-500/30">
+                          <label className="block text-xs text-dark-400 mb-1">Select Model</label>
+                          <select
+                            value={
+                              provider.id === 'openai' ? openaiModel :
+                              provider.id === 'gemini' ? geminiModel :
+                              provider.id === 'perplexity' ? perplexityModel :
+                              anthropicModel
+                            }
+                            onChange={(e) => {
+                              if (provider.id === 'openai') setOpenaiModel(e.target.value);
+                              else if (provider.id === 'gemini') setGeminiModel(e.target.value);
+                              else if (provider.id === 'perplexity') setPerplexityModel(e.target.value);
+                              else setAnthropicModel(e.target.value);
+                            }}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          >
+                            {provider.models.map((model) => (
+                              <option key={model.id} value={model.id}>{model.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-dark-400 mt-3">{providers.length} provider(s) selected</p>
+              </div>
+
+              {/* Section 2: Region & Language */}
+              <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
+                <label className="block text-sm font-medium mb-4 flex items-center gap-2">
+                  <Globe2 className="w-5 h-5 text-primary-500" /> Region &amp; Language
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-dark-400 mb-2">Market / Country</label>
+                    <select
+                      value={market}
+                      onChange={(e) => setMarket(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {MARKETS.map((m) => (
+                        <option key={m.code} value={m.code}>{m.name} ({m.code})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-dark-400 mb-2">Language</label>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {LANGUAGES.map((l) => (
+                        <option key={l.code} value={l.code}>{l.name} ({l.code})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Knowledge Source */}
+              <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
+                <label className="block text-sm font-medium mb-4 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-primary-500" /> Knowledge Source
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setMode('provider_web')}
+                    className={cn(
+                      'p-4 rounded-lg border-2 transition-all text-left',
+                      mode === 'provider_web'
+                        ? 'border-primary-500 bg-primary-500/10'
+                        : 'border-dark-600 hover:border-dark-500'
+                    )}
+                  >
+                    <div className="font-medium flex items-center gap-2">
+                      <Globe className="w-4 h-4" /> Web Search
+                    </div>
+                    <div className="text-xs text-dark-400 mt-1">Uses live web data (recommended)</div>
+                  </button>
+                  <button
+                    onClick={() => setMode('internal')}
+                    className={cn(
+                      'p-4 rounded-lg border-2 transition-all text-left',
+                      mode === 'internal'
+                        ? 'border-primary-500 bg-primary-500/10'
+                        : 'border-dark-600 hover:border-dark-500'
+                    )}
+                  >
+                    <div className="font-medium flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> Internal Knowledge
+                    </div>
+                    <div className="text-xs text-dark-400 mt-1">Model&apos;s training data only</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 4: Queries */}
+              <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-primary-500" /> Queries
+                    {queriesText && (
+                      <span className="text-xs text-dark-400">
+                        ({queriesText.split('\n').filter(l => l.trim()).length} / {questionCount})
+                      </span>
+                    )}
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={handleLoadSamples}
+                      className="text-xs px-3 py-1.5 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
+                    >
+                      Load Samples
+                    </button>
+                    <button
+                      onClick={generateQueries}
+                      disabled={isGeneratingQueries}
+                      className="text-xs px-3 py-1.5 bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 rounded-md transition-colors flex items-center gap-1"
+                    >
+                      {isGeneratingQueries ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                      AI Generate ({questionCount})
+                    </button>
+                  </div>
+                </div>
+
+                {isGeneratingQueries && !queriesText && (
+                  <div className="flex items-center gap-3 py-6 justify-center text-dark-400">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+                    Generating {questionCount} queries for {brandName}...
+                  </div>
+                )}
+
+                {queryGenError && (
+                  <div className="mb-3 text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded">
+                    {queryGenError}
+                  </div>
+                )}
+
+                <textarea
+                  value={queriesText}
+                  onChange={(e) => setQueriesText(e.target.value)}
+                  placeholder={`Enter one question per line, e.g.:\n\nWhat are the best ${industry} brands?\nCompare top ${industry} companies\nWho leads in ${industry}?`}
+                  rows={12}
+                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm resize-none"
+                />
+                <p className="text-xs text-dark-400 mt-2">
+                  Edit queries above before running the analysis.
+                </p>
+              </div>
+
+              {/* Run button */}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setPhase(1); setLlmResults(null); setLlmProgress(null); }}
+                  className="px-6 py-3 bg-dark-700 hover:bg-dark-600 rounded-lg font-medium transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleStartLlmRun}
+                  disabled={queriesText.split('\n').filter(l => l.trim()).length === 0 || isStarting || providers.length === 0}
+                  className={cn(
+                    'flex-1 px-6 py-4 rounded-lg font-semibold text-lg transition-all flex items-center justify-center gap-2',
+                    queriesText.split('\n').filter(l => l.trim()).length > 0 && !isStarting && providers.length > 0
+                      ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/25'
+                      : 'bg-dark-600 text-dark-400 cursor-not-allowed'
+                  )}
+                >
+                  {isStarting ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Starting...</>
+                  ) : (
+                    <><Play className="w-5 h-5" /> Run LLM Analysis ({queriesText.split('\n').filter(l => l.trim()).length} queries)</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Phase 2: LLM running (progress) */}
+        {phase === 2 && llmRunning && llmProgress && !llmResults && (
+          <ProgressView progress={llmProgress} />
+        )}
+
+        {/* Phase 2: LLM waiting for first progress tick */}
+        {phase === 2 && llmRunning && !llmProgress && !llmResults && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+          </div>
+        )}
+
+        {/* Phase 2: LLM results */}
+        {phase === 2 && llmResults && (
+          <ResultsView
+            results={llmResults}
+            brandName={brandName}
+            onNewRun={handleNewAnalysis}
+            jobId={llmJobId || undefined}
+            onContinueToCombined={seoAnalysis ? () => setPhase(3) : undefined}
+          />
+        )}
+
+        {/* ============================================================
+            PHASE 3: Combined Visibility Report
+        ============================================================ */}
+        {phase === 3 && seoAnalysis && llmResults && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-5xl mx-auto"
+          >
+            <PhaseIndicator currentPhase={3} />
+
+            {/* 1. Visibility Index card */}
+            <div className="bg-gradient-to-br from-blue-900/40 to-violet-900/30 rounded-2xl p-8 border border-blue-500/30 mb-8">
+              <div className="text-center">
+                <div className="text-sm text-blue-400 mb-2 font-medium uppercase tracking-wider">Visibility Index</div>
+                <div className="text-7xl font-bold text-cyan-400 mb-4">{compositeScore}</div>
+                <div className="flex justify-center gap-8 mt-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-cyan-400">{llmVisibility.toFixed(1)}%</div>
+                    <div className="text-xs text-dark-400 mt-1">LLM Presence</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400">{seoAnalysis.scores.overall}</div>
+                    <div className="text-xs text-dark-400 mt-1">Structural Readiness</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-violet-400">{seoAnalysis.scores.aeo}</div>
+                    <div className="text-xs text-dark-400 mt-1">AEO Score</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Structural Baseline section */}
+            <div className="bg-dark-800 rounded-xl p-6 border border-dark-700 mb-6">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-green-400" />
+                Structural Baseline
+                <span className="text-dark-400 font-normal text-sm ml-1">{seoDomain}</span>
+              </h3>
+              <SiteOverview analysis={seoAnalysis} />
+            </div>
+
+            {/* 3. LLM Visibility section */}
+            <div className="bg-dark-800 rounded-xl p-6 border border-dark-700 mb-6">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-cyan-400" />
+                LLM Visibility
+                <span className="text-dark-400 font-normal text-sm ml-1">{brandName}</span>
+              </h3>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-dark-400 mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" /> Provider Visibility
+                  </h4>
+                  <div className="space-y-3">
+                    {Object.entries(llmResults.summary.providerVisibility).map(([provider, visibility]) => (
+                      <div key={provider}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="capitalize">{provider}</span>
+                          <span className={getVisibilityColor(visibility)}>{visibility.toFixed(1)}%</span>
+                        </div>
+                        <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              'h-full rounded-full',
+                              visibility >= 70 ? 'bg-green-500' : visibility >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                            )}
+                            style={{ width: `${visibility}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-dark-400 mb-3 flex items-center gap-2">
+                    <Eye className="w-4 h-4" /> Competitor Mentions
+                  </h4>
+                  {(() => {
+                    const counts: Record<string, number> = {};
+                    llmResults.results.forEach(r => {
+                      r.otherBrandsDetected?.forEach(b => { counts[b] = (counts[b] || 0) + 1; });
+                    });
+                    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+                    return sorted.length > 0 ? (
+                      <div className="space-y-2">
+                        {sorted.map(([name, count], idx) => (
+                          <div key={name} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-dark-500">#{idx + 1}</span>
+                              <span>{name}</span>
+                            </div>
+                            <span className="text-dark-400">{((count / llmResults.results.length) * 100).toFixed(0)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-dark-400 text-sm">No competitor mentions detected</p>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Export buttons */}
+            <div className="flex gap-3 justify-end mb-6">
+              <button
+                onClick={() => openCombinedReportAsHTML(seoAnalysis, llmResults)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-dark-700 hover:bg-dark-600 text-dark-200 border border-dark-600 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                Export as HTML
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </button>
+            </div>
+
+            {/* New analysis */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleNewAnalysis}
+                className="px-8 py-3 bg-primary-500 hover:bg-primary-600 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" /> Run New Analysis
+              </button>
+            </div>
+          </motion.div>
+        )}
       </main>
 
       <footer className="border-t border-dark-700 py-4">
