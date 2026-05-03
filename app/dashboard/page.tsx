@@ -1626,22 +1626,6 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                     />
                   </div>
 
-                  {/* Question Count */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Number of Questions to Generate</label>
-                    <select
-                      value={questionCount}
-                      onChange={(e) => setQuestionCount(parseInt(e.target.value))}
-                      className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    >
-                      <option value={5}>5 questions</option>
-                      <option value={10}>10 questions</option>
-                      <option value={15}>15 questions</option>
-                      <option value={20}>20 questions</option>
-                      <option value={25}>25 questions (maximum)</option>
-                    </select>
-                  </div>
-
                   {/* Crawl Mode */}
                   <div>
                     <label className="block text-sm font-medium mb-3">Crawl Mode</label>
