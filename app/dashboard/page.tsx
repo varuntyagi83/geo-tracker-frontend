@@ -1072,8 +1072,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (phase !== 1) return;
 
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const url = `${API_BASE}/api/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
+    const url = `/api/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
 
     setSeoState('initializing');
     setSeoError(null);
