@@ -7,7 +7,7 @@ import type { CrawlConfig } from '@/types/seo/crawler'
 export const maxDuration = 300 // 5 minutes for Vercel
 
 const QuerySchema = z.object({
-  url: z.string().url('Invalid URL'),
+  url: z.string().transform(v => v.startsWith('http') ? v : `https://${v}`).pipe(z.string().url('Invalid URL')),
   maxPages: z.coerce.number().int().min(1).max(100).default(25),
   maxDepth: z.coerce.number().int().min(1).max(3).default(2),
   includeSitemap: z.coerce.boolean().default(false),

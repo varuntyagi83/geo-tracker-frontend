@@ -1072,7 +1072,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (phase !== 1) return;
 
-    const url = `/analyze/stream?url=${encodeURIComponent(websiteUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
+    const normalizedUrl = websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`;
+    const url = `/analyze/stream?url=${encodeURIComponent(normalizedUrl)}&maxPages=${maxPages}&maxDepth=${crawlDepth}&includeSitemap=false`;
 
     setSeoState('initializing');
     setSeoError(null);
