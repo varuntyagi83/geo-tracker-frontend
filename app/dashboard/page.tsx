@@ -1438,7 +1438,7 @@ export default function DashboardPage() {
   // ==============================================
   // SEO Report helpers
   // ==============================================
-  const openSeoReportAsHTML = (analysis: SiteAnalysis) => {
+  const openSeoReportAsHTML = (analysis: SiteAnalysis, autoPrint = false) => {
     const scoreColor = (v: number) =>
       v >= 80 ? '#4ade80' : v >= 60 ? '#facc15' : '#f87171'
 
@@ -1490,31 +1490,53 @@ export default function DashboardPage() {
 
     const renderRecommendations = (ai: typeof analysis.aiRecommendations) => {
       if (!ai) return ''
-      const impactBadge = (impact: string) => {
-        const c = impact === 'high' ? '#dc2626' : impact === 'medium' ? '#d97706' : '#6b7280'
-        return `<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:${c}20;color:${c};border:1px solid ${c}40;">${impact} impact</span>`
-      }
+      const impactColor = (v: string) => v === 'high' ? '#ef4444' : v === 'medium' ? '#f59e0b' : '#6b7280'
+      const effortColor = (v: string) => v === 'low' ? '#22d3ee' : v === 'medium' ? '#a78bfa' : '#f59e0b'
+      const badge = (label: string, color: string) =>
+        `<span style="font-size:10px;padding:2px 8px;border-radius:3px;background:${color}18;color:${color};border:1px solid ${color}40;white-space:nowrap;">${label}</span>`
       const renderGroup = (title: string, items: typeof ai.critical) => items.length === 0 ? '' : `
-        <h3 style="color:#a78bfa;font-size:13px;margin:20px 0 8px;">${title}</h3>
+        <h3 style="color:#a78bfa;font-size:13px;margin:24px 0 10px;letter-spacing:0.05em;text-transform:uppercase;">${title}</h3>
         ${items.map(r => `
-          <div style="background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-              <strong style="font-size:13px;color:#e2e8f0;">${r.title}</strong>
-              ${impactBadge(r.impact)}
+          <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:16px;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+              <strong style="font-size:14px;color:#f1f5f9;">${r.title}</strong>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${badge(r.impact + ' impact', impactColor(r.impact))}
+                ${badge(r.effort + ' effort', effortColor(r.effort))}
+              </div>
             </div>
-            <p style="font-size:12px;color:#94a3b8;margin:0 0 6px;">${r.description}</p>
-            <p style="font-size:12px;color:#22d3ee;margin:0;">&rsaquo; ${r.action}</p>
+            <p style="font-size:12px;color:#94a3b8;margin:0 0 10px;line-height:1.6;">${r.description}</p>
+            <p style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 4px;">Action</p>
+            <p style="font-size:12px;color:#22d3ee;margin:0 0 10px;">${r.action}</p>
+            ${r.affectedPages && r.affectedPages.length > 0 ? `
+            <p style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px;">Affected Pages (${r.affectedPages.length})</p>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+              ${r.affectedPages.map(u => `<code style="font-size:10px;background:#1e293b;padding:2px 6px;border-radius:3px;color:#94a3b8;">${u.replace(/</g, '&lt;')}</code>`).join('')}
+            </div>` : ''}
+            ${r.codeSnippet ? `
+            <p style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px;">Code Snippet</p>
+            <pre style="background:#18181b;border:1px solid #27272a;border-radius:6px;padding:12px;font-size:11px;color:#4ade80;overflow-x:auto;margin:0;line-height:1.5;">${r.codeSnippet.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>` : ''}
           </div>`).join('')}`
 
       return `
-        <div style="background:#1e293b;border-radius:8px;padding:16px;margin-bottom:24px;">
-          <p style="font-weight:600;color:#94a3b8;font-size:11px;text-transform:uppercase;margin:0 0 8px;">EXECUTIVE SUMMARY</p>
-          <p style="font-size:13px;color:#cbd5e1;margin:0 0 8px;">${ai.executiveSummary.narrative}</p>
-          ${ai.executiveSummary.biggestWin ? `<p style="font-size:12px;color:#22d3ee;margin:0;">&rsaquo; Biggest Win: ${ai.executiveSummary.biggestWin}</p>` : ''}
+        <div style="background:#1e293b;border-radius:8px;padding:20px;margin-bottom:24px;">
+          <p style="font-weight:600;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;margin:0 0 10px;">Executive Summary</p>
+          <p style="font-size:13px;color:#cbd5e1;margin:0 0 12px;line-height:1.7;">${ai.executiveSummary.narrative}</p>
+          ${ai.executiveSummary.scoreContext ? `
+          <div style="border-left:3px solid #3b82f6;padding:8px 12px;margin-bottom:10px;">
+            <p style="font-size:10px;font-weight:600;color:#3b82f6;text-transform:uppercase;margin:0 0 4px;letter-spacing:0.1em;">Score Context</p>
+            <p style="font-size:12px;color:#94a3b8;margin:0;">${ai.executiveSummary.scoreContext}</p>
+          </div>` : ''}
+          ${ai.executiveSummary.biggestWin ? `
+          <div style="border-left:3px solid #eab308;padding:8px 12px;">
+            <p style="font-size:10px;font-weight:600;color:#eab308;text-transform:uppercase;margin:0 0 4px;letter-spacing:0.1em;">Biggest Win</p>
+            <p style="font-size:12px;color:#94a3b8;margin:0;">${ai.executiveSummary.biggestWin}</p>
+          </div>` : ''}
         </div>
         ${renderGroup('Critical', ai.critical)}
         ${renderGroup('Important', ai.important)}
-        ${renderGroup('Quick Wins', ai.quickWins)}`
+        ${renderGroup('Quick Wins', ai.quickWins)}
+        ${ai.enhancements && ai.enhancements.length > 0 ? renderGroup('Enhancements', ai.enhancements) : ''}`
     }
 
     const html = `<!DOCTYPE html>
@@ -1578,11 +1600,19 @@ export default function DashboardPage() {
       <div style="margin-bottom:16px;">
         <p style="font-size:11px;font-weight:600;color:${g.color};text-transform:uppercase;margin:0 0 8px;">${g.label} &middot; ${g.items.length} issue${g.items.length !== 1 ? 's' : ''}</p>
         ${g.items.map(i => `
-          <div style="background:${g.bg};border-left:3px solid ${g.color};border-radius:4px;padding:10px 12px;margin-bottom:6px;">
-            <strong style="font-size:13px;color:#e2e8f0;">${i.title}</strong>
-            <span style="font-size:11px;color:${g.color};margin-left:8px;">${i.count} pages</span>
-            <p style="font-size:12px;color:#94a3b8;margin:4px 0 0;">${i.description}</p>
-            <p style="font-size:12px;color:#475569;margin:2px 0 0;">${i.recommendation}</p>
+          <div style="background:${g.bg};border-left:3px solid ${g.color};border-radius:6px;padding:14px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+              <strong style="font-size:14px;color:#f1f5f9;">${i.title}</strong>
+              <span style="font-size:10px;color:${g.color};border:1px solid ${g.color}50;padding:2px 8px;border-radius:3px;">${i.count} page${i.count !== 1 ? 's' : ''}</span>
+            </div>
+            <p style="font-size:12px;color:#94a3b8;margin:0 0 8px;line-height:1.6;">${i.description}</p>
+            <p style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 4px;">Action</p>
+            <p style="font-size:12px;color:#22d3ee;margin:0 0 8px;">${i.recommendation}</p>
+            ${i.affectedPages && i.affectedPages.length > 0 ? `
+            <p style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px;">Affected Pages</p>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              ${i.affectedPages.map(u => `<code style="font-size:10px;background:#0f172a;padding:2px 6px;border-radius:3px;color:#94a3b8;">${u.replace(/</g, '&lt;')}</code>`).join('')}
+            </div>` : ''}
           </div>`).join('')}
       </div>`).join('')
   })()}
@@ -1652,13 +1682,14 @@ export default function DashboardPage() {
   <p style="color:#334155;font-size:11px;margin-top:48px;border-top:1px solid #1e293b;padding-top:12px;">
     Confidential &middot; Generated by GEO Raydar on ${new Date().toLocaleString()} &middot; ${analysis.stats.totalPages} pages &middot; Depth ${analysis.crawlConfig?.maxDepth ?? 2}
   </p>
+  ${autoPrint ? `<script>window.addEventListener('load', () => { setTimeout(() => window.print(), 400) })<\/script>` : ''}
 </body></html>`
 
     const blob = new Blob([html], { type: 'text/html' })
     window.open(URL.createObjectURL(blob), '_blank')
   };
 
-  const openCombinedReportAsHTML = (seo: SiteAnalysis, llm: RunResults) => {
+  const openCombinedReportAsHTML = (seo: SiteAnalysis, llm: RunResults, autoPrint = false) => {
     const llmVis = llm.summary.overallVisibility;
     const composite = Math.round((llmVis * 0.40) + (seo.scores.overall * 0.40) + (seo.scores.aeo * 0.20));
 
@@ -1666,8 +1697,10 @@ export default function DashboardPage() {
 <html>
 <head><meta charset="utf-8"><title>Combined Visibility Report - ${brandName}</title>
 <style>
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
   h1 { color: #22d3ee; } h2 { color: #a78bfa; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-top: 2rem; }
+  @media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
   .index-card { background: linear-gradient(135deg, #1e3a5f, #1e1b4b); border: 1px solid #3b82f6; border-radius: 0.75rem; padding: 2rem; text-align: center; margin: 1.5rem 0; }
   .composite { font-size: 4rem; font-weight: 700; color: #22d3ee; }
   .sub-scores { display: flex; gap: 2rem; justify-content: center; margin-top: 1.5rem; }
@@ -1699,6 +1732,7 @@ export default function DashboardPage() {
 ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</td><td>${v.toFixed(1)}%</td></tr>`).join('')}
 </tbody></table>
 <p style="color:#475569;font-size:0.75rem">Generated by GEO Raydar on ${new Date().toLocaleString()}</p>
+  ${autoPrint ? `<script>window.addEventListener('load', () => { setTimeout(() => window.print(), 400) })<\/script>` : ''}
 </body></html>`;
     const blob = new Blob([html], { type: 'text/html' });
     window.open(URL.createObjectURL(blob), '_blank');
@@ -2128,7 +2162,7 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                       View as HTML
                     </button>
                     <button
-                      onClick={() => window.print()}
+                      onClick={() => openSeoReportAsHTML(seoAnalysis, true)}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors"
                     >
                       <Download className="w-4 h-4" />
@@ -2581,7 +2615,7 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                 Export as HTML
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={() => openCombinedReportAsHTML(seoAnalysis, llmResults, true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors"
               >
                 <Download className="w-4 h-4" />
