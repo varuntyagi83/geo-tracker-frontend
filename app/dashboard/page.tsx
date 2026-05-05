@@ -1542,6 +1542,7 @@ export default function DashboardPage() {
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>SEO &amp; AEO Report - ${analysis.domain}</title>
+<link rel="icon" href="https://www.google.com/s2/favicons?domain=${encodeURIComponent(analysis.domain)}&sz=32" type="image/png">
 <style>
   * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; background: #0a0f1e; color: #e2e8f0; line-height: 1.5; }
@@ -1704,6 +1705,7 @@ export default function DashboardPage() {
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>Combined Visibility Report - ${brandName}</title>
+<link rel="icon" href="https://www.google.com/s2/favicons?domain=${encodeURIComponent(seo.domain)}&sz=32" type="image/png">
 <style>
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
