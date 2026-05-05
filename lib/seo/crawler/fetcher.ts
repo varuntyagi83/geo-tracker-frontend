@@ -1,4 +1,5 @@
 import pRetry, { AbortError } from 'p-retry'
+import { fetch as undiciFetch, Agent } from 'undici'
 import type { CrawledPage } from '@/types/seo/crawler'
 
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN'
@@ -117,6 +118,42 @@ export class PageFetcher {
   constructor(timeout = 15000) {
     this.circuitBreaker = new CircuitBreaker()
     this.timeout = timeout
+  }
+
+  private async fetchInsecure(url: string, depth: number): Promise<CrawledPage> {
+    const startTime = Date.now()
+    const insecureAgent = new Agent({ connect: { rejectUnauthorized: false } })
+    const response = await undiciFetch(url, {
+      dispatcher: insecureAgent,
+      signal: AbortSignal.timeout(this.timeout),
+      headers: {
+        'User-Agent': randomUA(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'identity',
+      },
+      redirect: 'follow',
+    })
+
+    const contentType = response.headers.get('content-type') || ''
+    let html = ''
+    if (contentType.includes('text/html')) {
+      html = await streamReadHtml(response.body as ReadableStream<Uint8Array>)
+      html = stripHeavyTags(html)
+    }
+
+    return {
+      url,
+      finalUrl: url,
+      statusCode: response.status,
+      contentType,
+      html,
+      loadTime: Date.now() - startTime,
+      depth,
+      internalLinks: [],
+      externalLinks: [],
+      fetchedAt: new Date(),
+    } satisfies CrawledPage
   }
 
   private async fetchFromArchive(url: string, depth: number): Promise<CrawledPage> {
@@ -262,18 +299,47 @@ export class PageFetcher {
       const rawMsg = err instanceof Error ? err.message : String(err)
       const isNetworkFailure = rawMsg === 'fetch failed' || rawMsg.includes('ECONNREFUSED') || rawMsg.includes('ENOTFOUND')
       const isBlocked = rawMsg.includes('403')
+      const isSslError = rawMsg === 'fetch failed' &&
+        err instanceof Error &&
+        (err.cause instanceof Error) &&
+        (err.cause.message.includes('certificate') || err.cause.message.includes('self-signed') || err.cause.message.includes('SSL'))
+
       if ((isBlocked || isNetworkFailure) && depth === 0) {
+        // Try Wayback Machine first
         try {
           console.info(`[Fetcher] Direct fetch failed (${rawMsg}) — falling back to Wayback Machine for ${url}`)
           const archived = await this.fetchFromArchive(url, depth)
           this.circuitBreaker.recordSuccess()
           return archived
-        } catch (archiveErr) {
+        } catch {
+          // Wayback failed — for SSL errors, try one last time with cert verification off
+          if (isSslError) {
+            try {
+              console.info(`[Fetcher] Wayback unavailable — retrying ${url} with SSL verification disabled`)
+              const insecure = await this.fetchInsecure(url, depth)
+              this.circuitBreaker.recordSuccess()
+              return insecure
+            } catch (insecureErr) {
+              this.circuitBreaker.recordFailure()
+              throw new Error(extractFetchError(insecureErr))
+            }
+          }
           this.circuitBreaker.recordFailure()
-          // Surface the original network error with cause, not the archive error
           throw new Error(extractFetchError(err))
         }
       }
+
+      // SSL errors at depth > 0: retry insecure directly (Wayback for every subpage is too slow)
+      if (isSslError) {
+        try {
+          const insecure = await this.fetchInsecure(url, depth)
+          this.circuitBreaker.recordSuccess()
+          return insecure
+        } catch {
+          // fall through to failure
+        }
+      }
+
       this.circuitBreaker.recordFailure()
       throw new Error(extractFetchError(err))
     }
