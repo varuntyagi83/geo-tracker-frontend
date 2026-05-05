@@ -1439,46 +1439,187 @@ export default function DashboardPage() {
   // SEO Report helpers
   // ==============================================
   const openSeoReportAsHTML = (analysis: SiteAnalysis) => {
+    const scoreColor = (v: number) =>
+      v >= 80 ? '#4ade80' : v >= 60 ? '#facc15' : '#f87171'
+
+    const checkIcon = (status: string) =>
+      status === 'pass' ? '&#10003;' : status === 'fail' ? '&#10007;' : '!'
+
+    const checkColor = (status: string) =>
+      status === 'pass' ? '#22d3ee' : status === 'fail' ? '#f87171' : '#fbbf24'
+
+    const renderChecks = (checks: { tag: string; status: string; found: string; recommendation: string | null }[]) =>
+      checks.map(c => `
+        <div style="padding:6px 0;border-bottom:1px solid #1e293b;">
+          <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
+            <span style="color:${checkColor(c.status)};font-weight:700;width:12px;flex-shrink:0;">${checkIcon(c.status)}</span>
+            <code style="font-size:11px;color:#cbd5e1;">${c.tag}</code>
+            ${c.found ? `<span style="color:#64748b;font-size:11px;">·</span><span style="font-size:11px;color:#94a3b8;word-break:break-all;">${c.found.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>` : ''}
+          </div>
+          ${c.recommendation ? `<p style="font-size:11px;color:#475569;margin:4px 0 0 20px;">${c.recommendation.replace(/</g, '&lt;')}</p>` : ''}
+        </div>`).join('')
+
+    const renderPageCard = (page: { url: string; depth: number; scores: { overall: number; seo: number; aeo: number }; meta: typeof analysis.pages[0]['meta']; content: typeof analysis.pages[0]['content']; technical: typeof analysis.pages[0]['technical']; aeo: typeof analysis.pages[0]['aeo'] }) => {
+      const allChecks = [...page.meta, ...page.content, ...page.technical, ...page.aeo]
+      const fails = allChecks.filter(c => c.status === 'fail').length
+      const warns = allChecks.filter(c => c.status === 'warning').length
+      return `
+      <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;margin:16px 0;overflow:hidden;">
+        <div style="background:#1e293b;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <a href="${page.url}" style="color:#22d3ee;font-family:monospace;font-size:12px;text-decoration:none;">${page.url}</a>
+          <div style="display:flex;gap:8px;">
+            <span style="background:#18181b;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:11px;color:#94a3b8;">D${page.depth}</span>
+            ${fails > 0 ? `<span style="background:#450a0a;border-radius:4px;padding:2px 8px;font-size:11px;color:#f87171;">${fails} fail${fails !== 1 ? 's' : ''}</span>` : ''}
+            ${warns > 0 ? `<span style="background:#451a03;border-radius:4px;padding:2px 8px;font-size:11px;color:#fbbf24;">${warns} warn${warns !== 1 ? 's' : ''}</span>` : ''}
+          </div>
+        </div>
+        <div style="padding:8px 16px;background:#0f172a;border-bottom:1px solid #1e293b;display:flex;gap:24px;">
+          ${[['Overall', page.scores.overall], ['SEO', page.scores.seo], ['AEO', page.scores.aeo]].map(([l, v]) =>
+            `<div style="display:flex;gap:6px;align-items:baseline;"><span style="font-size:11px;color:#475569;">${l}</span><span style="font-size:16px;font-weight:700;color:${scoreColor(v as number)};">${v}</span></div>`
+          ).join('')}
+        </div>
+        <div style="padding:12px 16px;">
+          ${[['META', page.meta], ['CONTENT', page.content], ['TECHNICAL', page.technical], ['AEO', page.aeo]].map(([label, checks]) => `
+            <div style="margin-bottom:12px;">
+              <p style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px;">${label}</p>
+              ${renderChecks(checks as typeof analysis.pages[0]['meta'])}
+            </div>`).join('')}
+        </div>
+      </div>`
+    }
+
+    const renderRecommendations = (ai: typeof analysis.aiRecommendations) => {
+      if (!ai) return ''
+      const impactBadge = (impact: string) => {
+        const c = impact === 'high' ? '#dc2626' : impact === 'medium' ? '#d97706' : '#6b7280'
+        return `<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:${c}20;color:${c};border:1px solid ${c}40;">${impact} impact</span>`
+      }
+      const renderGroup = (title: string, items: typeof ai.critical) => items.length === 0 ? '' : `
+        <h3 style="color:#a78bfa;font-size:13px;margin:20px 0 8px;">${title}</h3>
+        ${items.map(r => `
+          <div style="background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+              <strong style="font-size:13px;color:#e2e8f0;">${r.title}</strong>
+              ${impactBadge(r.impact)}
+            </div>
+            <p style="font-size:12px;color:#94a3b8;margin:0 0 6px;">${r.description}</p>
+            <p style="font-size:12px;color:#22d3ee;margin:0;">&rsaquo; ${r.action}</p>
+          </div>`).join('')}`
+
+      return `
+        <div style="background:#1e293b;border-radius:8px;padding:16px;margin-bottom:24px;">
+          <p style="font-weight:600;color:#94a3b8;font-size:11px;text-transform:uppercase;margin:0 0 8px;">EXECUTIVE SUMMARY</p>
+          <p style="font-size:13px;color:#cbd5e1;margin:0 0 8px;">${ai.executiveSummary.narrative}</p>
+          ${ai.executiveSummary.biggestWin ? `<p style="font-size:12px;color:#22d3ee;margin:0;">&rsaquo; Biggest Win: ${ai.executiveSummary.biggestWin}</p>` : ''}
+        </div>
+        ${renderGroup('Critical', ai.critical)}
+        ${renderGroup('Important', ai.important)}
+        ${renderGroup('Quick Wins', ai.quickWins)}`
+    }
+
     const html = `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>SEO Report - ${analysis.domain}</title>
+<head><meta charset="utf-8"><title>SEO &amp; AEO Report - ${analysis.domain}</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
-  h1 { color: #22d3ee; } h2 { color: #a78bfa; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
-  .scores { display: flex; gap: 2rem; margin: 1rem 0; }
-  .score { text-align: center; padding: 1rem; background: #1e293b; border-radius: 0.5rem; min-width: 100px; }
-  .score .val { font-size: 2rem; font-weight: 700; color: #22d3ee; }
-  .score .lbl { font-size: 0.75rem; color: #94a3b8; }
-  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-  th { text-align: left; padding: 0.5rem; background: #1e293b; font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; }
-  td { padding: 0.5rem; border-bottom: 1px solid #1e293b; font-size: 0.875rem; }
-  .issue { padding: 0.5rem; border-radius: 0.25rem; margin: 0.25rem 0; font-size: 0.8rem; }
-  .critical { background: #450a0a; border-left: 3px solid #ef4444; }
-  .warning { background: #431407; border-left: 3px solid #f59e0b; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; background: #0a0f1e; color: #e2e8f0; line-height: 1.5; }
+  a { color: #22d3ee; }
+  h2 { color: #a78bfa; border-bottom: 1px solid #1e293b; padding-bottom: 8px; margin: 32px 0 16px; font-size: 16px; }
+  @media print { body { background: #0a0f1e !important; } }
 </style></head>
 <body>
-<h1>SEO &amp; AEO Report</h1>
-<p style="color:#94a3b8">Domain: <strong style="color:white">${analysis.domain}</strong> &nbsp;&bull;&nbsp; ${analysis.stats.totalPages} pages crawled</p>
-<div class="scores">
-  <div class="score"><div class="val">${analysis.scores.overall}</div><div class="lbl">Overall</div></div>
-  <div class="score"><div class="val">${analysis.scores.seo}</div><div class="lbl">SEO</div></div>
-  <div class="score"><div class="val">${analysis.scores.aeo}</div><div class="lbl">AEO</div></div>
-</div>
-<h2>Site-Wide Issues</h2>
-${[...analysis.siteWideIssues.critical, ...analysis.siteWideIssues.warnings].map(i =>
-  `<div class="issue ${i.severity}"><strong>${i.title}</strong>: ${i.description} (${i.count} pages)<br><small>${i.recommendation}</small></div>`
-).join('')}
-<h2>Pages (${analysis.pages.length})</h2>
-<table>
-<thead><tr><th>URL</th><th>Overall</th><th>SEO</th><th>AEO</th></tr></thead>
-<tbody>
-${analysis.pages.map(p => `<tr><td style="font-family:monospace;font-size:0.75rem">${p.url}</td><td>${p.scores.overall}</td><td>${p.scores.seo}</td><td>${p.scores.aeo}</td></tr>`).join('')}
-</tbody></table>
-<p style="color:#475569;font-size:0.75rem">Generated by GEO Raydar on ${new Date().toLocaleString()}</p>
-</body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
+  <div style="border-bottom:1px solid #1e293b;padding-bottom:24px;margin-bottom:24px;">
+    <p style="color:#22d3ee;font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 8px;">SEO &amp; AEO ANALYZER</p>
+    <h1 style="font-size:28px;font-weight:700;margin:0 0 4px;color:#fff;">SEO &amp; AEO Audit Report</h1>
+    <p style="color:#475569;font-size:13px;margin:0;">Comprehensive multi-page site analysis</p>
+  </div>
+
+  <div style="margin-bottom:32px;">
+    <a href="${analysis.startUrl}" style="font-size:20px;font-weight:700;">${analysis.domain}</a>
+    <p style="color:#475569;font-size:13px;margin:4px 0 16px;">${analysis.stats.totalPages} pages analyzed &middot; ${new Date(analysis.crawledAt).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} &middot; Depth ${analysis.crawlConfig?.maxDepth ?? 2}</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      ${[['OVERALL SCORE', analysis.scores.overall], ['SEO SCORE', analysis.scores.seo], ['AEO SCORE', analysis.scores.aeo]].map(([l, v]) => `
+        <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:20px 24px;min-width:130px;">
+          <p style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 4px;">${l}</p>
+          <p style="font-size:36px;font-weight:700;color:${scoreColor(v as number)};margin:0;">${v}</p>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <h2>Site Statistics</h2>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+    ${[
+      ['Total Pages', analysis.stats.totalPages],
+      ['Avg Load Time', `${analysis.stats.avgLoadTime.toFixed(2)}s`],
+      ['Missing H1', `${analysis.stats.pagesWithoutH1} pages`],
+      ['No Meta Desc', `${analysis.stats.pagesWithoutDescription} pages`],
+      ['With Schema', `${analysis.stats.pagesWithStructuredData} / ${analysis.stats.totalPages}`],
+      ['Alt Text Issues', `${analysis.stats.imagesWithoutAlt} pages`],
+    ].map(([l, v]) => `
+      <div style="background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:12px 16px;min-width:120px;">
+        <p style="font-size:10px;color:#475569;margin:0 0 4px;">${l}</p>
+        <p style="font-size:18px;font-weight:700;color:${typeof v === 'string' && v.includes('pages') && parseInt(v) > 0 ? '#fbbf24' : '#22d3ee'};margin:0;">${v}</p>
+      </div>`).join('')}
+  </div>
+
+  <h2>Site-Wide Issues</h2>
+  ${(() => {
+    const all = [...analysis.siteWideIssues.critical, ...analysis.siteWideIssues.warnings, ...analysis.siteWideIssues.opportunities]
+    if (all.length === 0) return '<p style="color:#475569;font-size:13px;">No site-wide issues detected.</p>'
+    const groups = [
+      { label: 'CRITICAL', color: '#ef4444', bg: '#450a0a', items: analysis.siteWideIssues.critical },
+      { label: 'WARNINGS', color: '#f59e0b', bg: '#431407', items: analysis.siteWideIssues.warnings },
+      { label: 'OPPORTUNITIES', color: '#3b82f6', bg: '#172554', items: analysis.siteWideIssues.opportunities },
+    ]
+    return groups.filter(g => g.items.length > 0).map(g => `
+      <div style="margin-bottom:16px;">
+        <p style="font-size:11px;font-weight:600;color:${g.color};text-transform:uppercase;margin:0 0 8px;">${g.label} &middot; ${g.items.length} issue${g.items.length !== 1 ? 's' : ''}</p>
+        ${g.items.map(i => `
+          <div style="background:${g.bg};border-left:3px solid ${g.color};border-radius:4px;padding:10px 12px;margin-bottom:6px;">
+            <strong style="font-size:13px;color:#e2e8f0;">${i.title}</strong>
+            <span style="font-size:11px;color:${g.color};margin-left:8px;">${i.count} pages</span>
+            <p style="font-size:12px;color:#94a3b8;margin:4px 0 0;">${i.description}</p>
+            <p style="font-size:12px;color:#475569;margin:2px 0 0;">${i.recommendation}</p>
+          </div>`).join('')}
+      </div>`).join('')
+  })()}
+
+  <h2>Page Summary</h2>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+    <thead><tr style="background:#1e293b;">
+      <th style="text-align:left;padding:8px;font-size:11px;text-transform:uppercase;color:#475569;font-weight:600;">URL</th>
+      <th style="padding:8px;font-size:11px;text-transform:uppercase;color:#475569;font-weight:600;text-align:center;">Overall</th>
+      <th style="padding:8px;font-size:11px;text-transform:uppercase;color:#475569;font-weight:600;text-align:center;">SEO</th>
+      <th style="padding:8px;font-size:11px;text-transform:uppercase;color:#475569;font-weight:600;text-align:center;">AEO</th>
+      <th style="padding:8px;font-size:11px;text-transform:uppercase;color:#475569;font-weight:600;text-align:center;">Issues</th>
+    </tr></thead>
+    <tbody>
+      ${analysis.pages.map(p => {
+        const issues = [...p.meta, ...p.content, ...p.technical, ...p.aeo].filter(c => c.status !== 'pass').length
+        return `<tr style="border-bottom:1px solid #0f172a;">
+          <td style="padding:8px;font-family:monospace;font-size:11px;color:#22d3ee;">${p.url}</td>
+          <td style="padding:8px;text-align:center;font-weight:700;color:${scoreColor(p.scores.overall)};">${p.scores.overall}</td>
+          <td style="padding:8px;text-align:center;font-weight:700;color:${scoreColor(p.scores.seo)};">${p.scores.seo}</td>
+          <td style="padding:8px;text-align:center;font-weight:700;color:${scoreColor(p.scores.aeo)};">${p.scores.aeo}</td>
+          <td style="padding:8px;text-align:center;font-size:12px;color:${issues > 0 ? '#fbbf24' : '#22d3ee'};">${issues > 0 ? issues : '&#10003;'}</td>
+        </tr>`
+      }).join('')}
+    </tbody>
+  </table>
+
+  <h2>Per-Page Analysis</h2>
+  <p style="font-size:12px;color:#475569;margin:-8px 0 16px;">Detailed checks for each crawled page</p>
+  ${analysis.pages.map(p => renderPageCard(p)).join('')}
+
+  ${analysis.aiRecommendations ? `<h2>AI Recommendations</h2>${renderRecommendations(analysis.aiRecommendations)}` : ''}
+
+  <p style="color:#334155;font-size:11px;margin-top:48px;border-top:1px solid #1e293b;padding-top:12px;">
+    Confidential &middot; Generated by GEO Raydar on ${new Date().toLocaleString()} &middot; ${analysis.stats.totalPages} pages &middot; Depth ${analysis.crawlConfig?.maxDepth ?? 2}
+  </p>
+</body></html>`
+
+    const blob = new Blob([html], { type: 'text/html' })
+    window.open(URL.createObjectURL(blob), '_blank')
   };
 
   const openCombinedReportAsHTML = (seo: SiteAnalysis, llm: RunResults) => {
