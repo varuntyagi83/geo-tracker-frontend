@@ -1542,7 +1542,7 @@ export default function DashboardPage() {
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>SEO &amp; AEO Report - ${analysis.domain}</title>
-<link rel="icon" href="https://www.google.com/s2/favicons?domain=${encodeURIComponent(analysis.domain)}&sz=32" type="image/png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M16 4C11.582 4 8 7.582 8 12c0 6.627 8 16 8 16s8-9.373 8-16c0-4.418-3.582-8-8-8z' fill='%236366f1'/><circle cx='16' cy='12' r='3' fill='%230f172a'/></svg>" type="image/svg+xml">
 <style>
   * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; background: #0a0f1e; color: #e2e8f0; line-height: 1.5; }
@@ -1705,7 +1705,7 @@ export default function DashboardPage() {
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>Combined Visibility Report - ${brandName}</title>
-<link rel="icon" href="https://www.google.com/s2/favicons?domain=${encodeURIComponent(seo.domain)}&sz=32" type="image/png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M16 4C11.582 4 8 7.582 8 12c0 6.627 8 16 8 16s8-9.373 8-16c0-4.418-3.582-8-8-8z' fill='%236366f1'/><circle cx='16' cy='12' r='3' fill='%230f172a'/></svg>" type="image/svg+xml">
 <style>
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; background: #0f1117; color: #e2e8f0; }
