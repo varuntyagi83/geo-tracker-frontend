@@ -90,6 +90,26 @@ export class CircuitBreaker {
   }
 }
 
+function extractFetchError(err: unknown): string {
+  if (!(err instanceof Error)) return String(err)
+  if (err.message !== 'fetch failed') return err.message
+  const cause = (err as Error & { cause?: unknown }).cause
+  if (cause instanceof Error) {
+    if (cause.message.includes('self-signed') || cause.message.includes('certificate')) {
+      return `SSL certificate error — ${cause.message}`
+    }
+    if (cause.message.includes('ECONNREFUSED')) return `Connection refused — site may be down`
+    if (cause.message.includes('ENOTFOUND') || cause.message.includes('ENOENT')) {
+      return `Domain not found — check the URL`
+    }
+    if (cause.message.includes('ETIMEDOUT') || cause.message.includes('timed out')) {
+      return `Connection timed out — site is too slow or unreachable`
+    }
+    return `Network error: ${cause.message}`
+  }
+  return err.message
+}
+
 export class PageFetcher {
   private circuitBreaker: CircuitBreaker
   private timeout: number
@@ -229,7 +249,7 @@ export class PageFetcher {
           // will just fail) or we'll try Wayback after the first attempt (depth 0)
           shouldRetry: (error) => !String(error).includes('403'),
           onFailedAttempt: (error) => {
-            console.warn(`[Fetcher] Attempt ${error.attemptNumber} failed for ${url}: ${String(error)}`)
+            console.warn(`[Fetcher] Attempt ${error.attemptNumber} failed for ${url}: ${extractFetchError(error)}`)
           },
         }
       )
@@ -237,23 +257,25 @@ export class PageFetcher {
       this.circuitBreaker.recordSuccess()
       return page
     } catch (err) {
-      // If direct fetch failed with 403, try Wayback Machine — but only for the
-      // start URL (depth 0). Deeper pages on 403-blocked sites are all blocked;
-      // trying Wayback for every subpage causes archive.org rate-limiting and hangs.
-      const msg = err instanceof Error ? err.message : String(err)
-      if (msg.includes('403') && depth === 0) {
+      // Try Wayback Machine for depth-0 fetch failures — covers both 403 blocks and
+      // network-level rejections (Cloudflare TCP resets, SSL handshake failures, etc.)
+      const rawMsg = err instanceof Error ? err.message : String(err)
+      const isNetworkFailure = rawMsg === 'fetch failed' || rawMsg.includes('ECONNREFUSED') || rawMsg.includes('ENOTFOUND')
+      const isBlocked = rawMsg.includes('403')
+      if ((isBlocked || isNetworkFailure) && depth === 0) {
         try {
-          console.info(`[Fetcher] Falling back to Wayback Machine for ${url}`)
+          console.info(`[Fetcher] Direct fetch failed (${rawMsg}) — falling back to Wayback Machine for ${url}`)
           const archived = await this.fetchFromArchive(url, depth)
           this.circuitBreaker.recordSuccess()
           return archived
         } catch (archiveErr) {
           this.circuitBreaker.recordFailure()
-          throw archiveErr
+          // Surface the original network error with cause, not the archive error
+          throw new Error(extractFetchError(err))
         }
       }
       this.circuitBreaker.recordFailure()
-      throw err
+      throw new Error(extractFetchError(err))
     }
   }
 
