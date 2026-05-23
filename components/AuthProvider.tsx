@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, ReactNode } from 'react';
-import { AuthContext, User, getStoredUser, setStoredUser, UserPermissions } from '@/lib/auth';
+import { AuthContext, User, setStoredUser, UserPermissions } from '@/lib/auth';
 import {
   loginUser,
   signupUser,
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (token) {
         try {
-          // Verify token with backend
+          // Verify token with backend — this is the only source of truth
           const response = await verifyAuthToken();
           if (response.valid && response.user) {
             const user: User = {
@@ -37,27 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(user);
             setStoredUser(user);
           } else {
-            // Token invalid, clear it
+            // Token rejected by backend: force a clean re-login
             setAuthToken(null);
             setStoredUser(null);
+            setUser(null);
           }
         } catch (error) {
-          // Token verification failed, try localStorage fallback
-          console.warn('Token verification failed, checking localStorage');
-          const storedUser = getStoredUser();
-          if (storedUser) {
-            setUser(storedUser);
-          } else {
-            // Clear invalid token
-            setAuthToken(null);
-          }
+          // Verification failed (invalid/expired token, or backend
+          // unreachable). Do NOT fall back to a cached localStorage user —
+          // require a fresh login so the UI never shows a session the
+          // backend won't honor.
+          console.warn('Token verification failed; clearing session');
+          setAuthToken(null);
+          setStoredUser(null);
+          setUser(null);
         }
       } else {
-        // No token, check localStorage (for backward compatibility)
-        const storedUser = getStoredUser();
-        if (storedUser) {
-          setUser(storedUser);
-        }
+        // No token: not authenticated. Clear any stale cached user.
+        setStoredUser(null);
+        setUser(null);
       }
 
       setIsLoading(false);
