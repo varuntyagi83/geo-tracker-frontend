@@ -16,47 +16,70 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        heading: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        // Rose (SIGNAL) — primary brand accent
         primary: {
-          DEFAULT: "#3B82F6", // Electric blue
-          foreground: "#ffffff",
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3B82F6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
+          DEFAULT: "#F472B6",
+          foreground: "#120810",
+          50:  "#FFF0F8",
+          100: "#FFD6ED",
+          200: "#FFADD9",
+          300: "#FF80C3",
+          400: "#F899CA",
+          500: "#F472B6",
+          600: "#E44E9E",
+          700: "#C93585",
+          800: "#A81F6C",
+          900: "#870F55",
+        },
+        // Signal Gold (ALERT)
+        gold: {
+          DEFAULT: "#FBBF24",
+          foreground: "#120810",
+          400: "#FCD34D",
+          500: "#FBBF24",
+          600: "#D97706",
+        },
+        // Dusty Lilac (MUTED)
+        lilac: {
+          DEFAULT: "#8B7BA8",
+          300: "#B4A5C8",
+          400: "#9D8EBA",
+          500: "#8B7BA8",
+          600: "#6B5A88",
+        },
+        // Deep Dark scale — all surfaces built on #120810
+        dark: {
+          DEFAULT: "#120810",
+          50:  "#F9F0F5",  // Ghost Lavender
+          100: "#EDE8F3",
+          200: "#D5CCDF",
+          300: "#B4A5C8",
+          400: "#8B7BA8",  // Dusty Lilac
+          500: "#4A3557",
+          600: "#2E1A3E",
+          700: "#231530",
+          800: "#1A0E1E",
+          900: "#120810",  // Deep Dark
+          950: "#080409",
         },
         secondary: {
-          DEFAULT: "#10B981", // Vibrant green
-          foreground: "#ffffff",
+          DEFAULT: "#8B7BA8",
+          foreground: "#F9F0F5",
         },
         destructive: {
-          DEFAULT: "#EF4444", // Red for gaps
-          foreground: "#ffffff",
-        },
-        dark: {
-          DEFAULT: "#0F172A",
-          50: "#f8fafc",
-          100: "#f1f5f9",
-          200: "#e2e8f0",
-          300: "#cbd5e1",
-          400: "#94a3b8",
-          500: "#64748b",
-          600: "#475569",
-          700: "#334155",
-          800: "#1e293b",
-          900: "#0f172a",
-          950: "#020617",
+          DEFAULT: "#EF4444",
+          foreground: "#FFFFFF",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

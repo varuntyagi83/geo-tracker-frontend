@@ -4,7 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 
 export const metadata: Metadata = {
-  title: 'GEO Raydar - AI Visibility Analytics',
+  title: 'GeoRaydar — AI Presence Analytics',
   description: 'Track your brand visibility across AI assistants like ChatGPT, Claude, Gemini, and Perplexity',
   icons: {
     icon: '/icon.svg',

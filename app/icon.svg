@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#0f172a"/>
-  <path d="M16 4C11.582 4 8 7.582 8 12c0 6.627 8 16 8 16s8-9.373 8-16c0-4.418-3.582-8-8-8z" fill="#6366f1"/>
-  <circle cx="16" cy="12" r="3" fill="#0f172a"/>
+  <rect width="32" height="32" rx="7" fill="#120810"/>
+  <!-- Signal dot -->
+  <circle cx="16" cy="27" r="2.5" fill="#F472B6"/>
+  <!-- Inner arc -->
+  <path d="M11 22 C11 22 13 19 16 19 C19 19 21 22 21 22" stroke="#F472B6" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Outer arc -->
+  <path d="M6 16 C6 16 10 9 16 9 C22 9 26 16 26 16" stroke="#F472B6" stroke-width="2.2" stroke-linecap="round"/>
 </svg>

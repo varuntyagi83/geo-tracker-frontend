@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Globe, Mail, Lock, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { GeoRaydarLogo } from '@/components/GeoRaydarLogo';
 import { useAuth } from '@/lib/auth';
 
 export default function LoginPage() {
@@ -57,8 +58,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
-          <Globe className="w-10 h-10 text-primary-500" />
-          <span className="text-2xl font-bold">GEO Raydar</span>
+          <GeoRaydarLogo size="md" />
         </div>
 
         {/* Form Card */}
