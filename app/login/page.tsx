@@ -127,22 +127,6 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-4 bg-dark-700/50 rounded-lg border border-dark-600">
-            <p className="text-xs text-dark-400 text-center">
-              <strong className="text-dark-300">Demo credentials:</strong><br />
-              Email: demo@geotracker.io<br />
-              Password: demo123
-            </p>
-            <div className="mt-3 pt-3 border-t border-dark-600">
-              <p className="text-xs text-dark-500 text-center">
-                Admin users also get access to the{' '}
-                <Link href="/admin" className="text-primary-400 hover:text-primary-300">
-                  Lead Management Panel
-                </Link>
-              </p>
-            </div>
-          </div>
         </div>
       </motion.div>
     </div>
