@@ -50,15 +50,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await loginUser(email, password);
 
       if (response.success && response.user) {
-        const user: User = {
+        const userData: User = {
           email: response.user.email,
           name: response.user.name,
           company: response.user.company,
           role: response.user.role,
           permissions: response.permissions as UserPermissions,
         };
-        setUser(user);
-        setStoredUser(user);
+        setUser(userData);
+        setStoredUser(userData);
+        // Set a same-domain session cookie so Next.js middleware can protect routes
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: response.token }),
+        }).catch(() => {});
         return true;
       }
       return false;
@@ -78,15 +84,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await signupUser(email, password, name, company);
 
       if (response.success && response.user) {
-        const user: User = {
+        const userData: User = {
           email: response.user.email,
           name: response.user.name,
           company: response.user.company,
           role: response.user.role || 'user',
           permissions: response.permissions as UserPermissions,
         };
-        setUser(user);
-        setStoredUser(user);
+        setUser(userData);
+        setStoredUser(userData);
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: response.token }),
+        }).catch(() => {});
         return true;
       }
       return false;
@@ -103,7 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     setStoredUser(null);
-    apiLogout(); // Clear token
+    // Clear Railway httpOnly cookie and same-domain session flag
+    apiLogout();
+    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
   };
 
   return (
