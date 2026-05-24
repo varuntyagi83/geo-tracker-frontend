@@ -13,11 +13,9 @@ import {
   TrendingUp,
   Zap,
   Target,
-  Users,
   CheckCircle2,
   ChevronRight,
   MessageSquare,
-  Eye,
   Shield,
   BookOpen,
   Database,
@@ -527,27 +525,6 @@ function ProblemSection() {
           </div>
         </div>
 
-        {/* Sample AI Response */}
-        <div className="mt-12 bg-dark-900 rounded-2xl p-8 border border-red-500/30">
-          <div className="text-sm text-red-400 mb-4 flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            What your customers might see when they ask AI:
-          </div>
-          <div className="bg-dark-800 rounded-xl p-6 font-mono text-sm">
-            <div className="text-dark-400 mb-2">User: What are the best vitamin D supplements in Germany?</div>
-            <div className="text-white">
-              AI: Based on quality and customer reviews, here are the top vitamin D supplements:
-              <br /><br />
-              1. <span className="text-orange-400">Brand A</span> - Known for high bioavailability
-              <br />
-              2. <span className="text-orange-400">Brand B</span> - Organic and vegan options
-              <br />
-              3. <span className="text-orange-400">Brand C</span> - Best value for money
-              <br /><br />
-              <span className="text-dark-500">// Where&apos;s YOUR brand?</span>
-            </div>
-          </div>
-        </div>
       </div>
     </Section>
   );
@@ -594,9 +571,6 @@ function HowItWorksSection() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
-          <p className="text-xl text-dark-400 max-w-2xl mx-auto">
-            A systematic approach to measuring and improving your brand&apos;s AI presence
-          </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -640,9 +614,6 @@ function DashboardPreviewSection() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Your AI Visibility Dashboard</h2>
-          <p className="text-xl text-dark-400 max-w-2xl mx-auto">
-            Real-time analytics on how your brand performs across AI assistants
-          </p>
         </div>
 
         {/* Mock Dashboard */}
@@ -761,77 +732,6 @@ function DashboardPreviewSection() {
   );
 }
 
-// ==============================================
-// BASELINE SECTION
-// ==============================================
-
-function BaselineSection() {
-  return (
-    <Section className="py-24">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Establishing Your Baseline</h2>
-          <p className="text-xl text-dark-400 max-w-2xl mx-auto">
-            A systematic methodology to measure and improve your AI visibility
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-            <Database className="w-8 h-8 text-primary-500 mb-4" />
-            <h3 className="font-semibold mb-2">Query Library</h3>
-            <p className="text-dark-400 text-sm">50-200 industry-specific, high-intent queries tailored to your market</p>
-          </div>
-          <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-            <TrendingUp className="w-8 h-8 text-secondary mb-4" />
-            <h3 className="font-semibold mb-2">Weekly Tracking</h3>
-            <p className="text-dark-400 text-sm">Consistent measurement cadence across all major LLMs</p>
-          </div>
-          <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-            <Target className="w-8 h-8 text-purple-500 mb-4" />
-            <h3 className="font-semibold mb-2">Baseline Period</h3>
-            <p className="text-dark-400 text-sm">4-week initial measurement before optimization begins</p>
-          </div>
-          <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-            <BarChart3 className="w-8 h-8 text-orange-500 mb-4" />
-            <h3 className="font-semibold mb-2">Metrics Tracked</h3>
-            <p className="text-dark-400 text-sm">Presence %, Position, Sentiment, and Context analysis</p>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div className="bg-dark-800 rounded-2xl p-8 border border-dark-700">
-          <div className="relative">
-            <div className="absolute left-0 right-0 top-1/2 h-1 bg-dark-700 -translate-y-1/2" />
-            <div className="relative flex justify-between">
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center z-10 mb-2">
-                  <Target className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-medium">Baseline</span>
-                <span className="text-xs text-dark-400">Weeks 1-4</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center z-10 mb-2">
-                  <Zap className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-medium">Optimization</span>
-                <span className="text-xs text-dark-400">Weeks 5-12</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center z-10 mb-2">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-medium">Growth</span>
-                <span className="text-xs text-dark-400">Ongoing</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-}
 
 // ==============================================
 // OPTIMIZATION STRATEGIES SECTION
@@ -839,31 +739,11 @@ function BaselineSection() {
 
 function OptimizationSection() {
   const strategies = [
-    {
-      icon: BookOpen,
-      title: 'Content Authority',
-      description: 'Creating definitive, AI-crawlable content that establishes your brand as the go-to source.',
-    },
-    {
-      icon: Database,
-      title: 'Structured Data',
-      description: 'Schema markup and structured data that LLMs can easily understand and reference.',
-    },
-    {
-      icon: Globe,
-      title: 'Citation Building',
-      description: 'Getting mentioned in authoritative sources that LLMs trust and frequently reference.',
-    },
-    {
-      icon: Shield,
-      title: 'Knowledge Graph Presence',
-      description: 'Ensuring presence in Wikipedia, Wikidata, and industry-specific databases.',
-    },
-    {
-      icon: Star,
-      title: 'Review & Mention Velocity',
-      description: 'Building authentic social proof through reviews and organic mentions.',
-    },
+    { icon: BookOpen, title: 'Content Authority' },
+    { icon: Database, title: 'Structured Data' },
+    { icon: Globe, title: 'Citation Building' },
+    { icon: Shield, title: 'Knowledge Graph Presence' },
+    { icon: Star, title: 'Review & Mention Velocity' },
   ];
 
   return (
@@ -871,9 +751,6 @@ function OptimizationSection() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Optimization Strategies</h2>
-          <p className="text-xl text-dark-400 max-w-2xl mx-auto">
-            Proven tactics to improve your brand&apos;s visibility in AI-generated responses
-          </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -884,11 +761,10 @@ function OptimizationSection() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="bg-dark-900 rounded-xl p-6 border border-dark-700 hover:border-primary-500/50 transition-colors"
+              className="bg-dark-900 rounded-xl p-6 border border-dark-700 hover:border-primary-500/50 transition-colors flex items-center gap-4"
             >
-              <strategy.icon className="w-10 h-10 text-primary-500 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{strategy.title}</h3>
-              <p className="text-dark-400">{strategy.description}</p>
+              <strategy.icon className="w-8 h-8 text-primary-500 flex-shrink-0" />
+              <h3 className="text-base font-semibold">{strategy.title}</h3>
             </motion.div>
           ))}
         </div>
@@ -1143,65 +1019,6 @@ function PricingSection() {
   );
 }
 
-// ==============================================
-// CASE STUDY SECTION
-// ==============================================
-
-function CaseStudySection() {
-  return (
-    <Section className="py-24 bg-dark-800/50">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Real Results</h2>
-            <p className="text-xl text-dark-400">
-              See how brands are improving their AI visibility
-            </p>
-          </div>
-
-          <div className="bg-dark-900 rounded-2xl p-8 border border-dark-700">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <div className="text-sm text-primary-400 mb-2">Case Study</div>
-                <h3 className="text-2xl font-bold mb-4">
-                  Premium Supplement Brand Increases AI Presence by 292%
-                </h3>
-                <p className="text-dark-400 mb-6">
-                  A leading European supplement brand used GeoRaydar to identify visibility gaps and implement targeted optimization strategies.
-                </p>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-dark-800 rounded-lg p-4">
-                    <div className="text-sm text-dark-400">Before</div>
-                    <div className="text-3xl font-bold text-red-500">12%</div>
-                  </div>
-                  <div className="bg-dark-800 rounded-lg p-4">
-                    <div className="text-sm text-dark-400">After 3 months</div>
-                    <div className="text-3xl font-bold text-secondary">47%</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-                <Quote className="w-8 h-8 text-primary-500 mb-4" />
-                <p className="text-lg mb-4">
-                  &ldquo;GeoRaydar gave us visibility into a completely blind spot. We had no idea competitors were dominating AI recommendations while we focused solely on traditional SEO.&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-500/20 rounded-full flex items-center justify-center">
-                    <Users className="w-5 h-5 text-primary-500" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Marketing Director</div>
-                    <div className="text-sm text-dark-400">Premium Supplement Brand</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-}
 
 // ==============================================
 // CTA/CONTACT SECTION
@@ -1272,6 +1089,27 @@ function CTASection() {
     <Section id="contact" className="py-24">
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
+          {/* Social proof strip */}
+          <div className="flex items-center gap-6 mb-12 bg-dark-800 rounded-2xl p-6 border border-dark-700">
+            <Quote className="w-6 h-6 text-primary-500 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-dark-300 mb-1">
+                &ldquo;We had no idea competitors were dominating AI recommendations while we focused solely on traditional SEO.&rdquo;
+              </p>
+              <span className="text-xs text-dark-500">Marketing Director, Premium Supplement Brand</span>
+            </div>
+            <div className="hidden sm:flex gap-6 flex-shrink-0 text-center">
+              <div>
+                <div className="text-2xl font-bold text-red-400">12%</div>
+                <div className="text-xs text-dark-500">Before</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-secondary">47%</div>
+                <div className="text-xs text-dark-500">3 months</div>
+              </div>
+            </div>
+          </div>
+
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Get Your Free AI Visibility Audit
@@ -1456,10 +1294,8 @@ export default function LandingPage() {
       <ProblemSection />
       <HowItWorksSection />
       <DashboardPreviewSection />
-      <BaselineSection />
       <OptimizationSection />
       <PricingSection />
-      <CaseStudySection />
       <CTASection />
       <Footer />
     </div>
