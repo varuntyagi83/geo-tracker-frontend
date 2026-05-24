@@ -154,6 +154,7 @@ function Navigation() {
     { href: '#problem', label: 'Problem' },
     { href: '#how-it-works', label: 'How It Works' },
     { href: '#dashboard', label: 'Dashboard' },
+    { href: '/case-studies', label: 'Case Studies' },
     { href: '#pricing', label: 'Pricing' },
   ];
 
