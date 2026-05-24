@@ -569,11 +569,6 @@ async function fetchAPIAuth<T>(
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-    }
     const errorData = await response.json().catch(() => ({}));
     throw new APIError(
       response.status,
