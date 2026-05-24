@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (success) {
         router.push('/dashboard');
       } else {
-        setError('Invalid email or password. Password must be at least 6 characters.');
+        setError('Invalid email or password.');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');

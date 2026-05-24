@@ -24,6 +24,9 @@ import {
   Send,
   Menu,
   X,
+  Brain,
+  Sparkles,
+  Globe2,
 } from 'lucide-react';
 import {
   LineChart,
@@ -183,12 +186,14 @@ function Navigation() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="text-sm text-dark-400 hover:text-white transition-colors"
-            >
-              Admin
-            </Link>
+            {user?.permissions?.can_access_admin && (
+              <Link
+                href="/admin"
+                className="text-sm text-dark-400 hover:text-white transition-colors"
+              >
+                Admin
+              </Link>
+            )}
             {user ? (
               <Link
                 href="/dashboard"
@@ -243,13 +248,15 @@ function Navigation() {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-dark-700">
-                <Link
-                  href="/admin"
-                  className="px-4 py-2 border border-dark-600 rounded-lg text-sm font-medium text-center hover:bg-dark-800 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Admin
-                </Link>
+                {user?.permissions?.can_access_admin && (
+                  <Link
+                    href="/admin"
+                    className="px-4 py-2 border border-dark-600 rounded-lg text-sm font-medium text-center hover:bg-dark-800 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
                 {user ? (
                   <Link
                     href="/dashboard"
@@ -349,7 +356,7 @@ function HeroSection() {
               href="#how-it-works"
               className="px-8 py-4 border border-dark-600 hover:border-dark-500 rounded-xl text-lg font-medium transition-colors"
             >
-              Learn More
+              How We Track It
             </a>
           </motion.div>
 
@@ -374,14 +381,14 @@ function HeroSection() {
               {/* LLMs */}
               <div className="flex flex-col items-center">
                 <div className="flex gap-2">
-                  <div className="w-12 h-12 bg-dark-800 border border-dark-700 rounded-lg flex items-center justify-center text-2xl">
-                    🤖
+                  <div className="w-12 h-12 bg-dark-800 border border-dark-700 rounded-lg flex items-center justify-center">
+                    <Brain className="w-6 h-6 text-green-400" />
                   </div>
-                  <div className="w-12 h-12 bg-dark-800 border border-dark-700 rounded-lg flex items-center justify-center text-2xl">
-                    ✨
+                  <div className="w-12 h-12 bg-dark-800 border border-dark-700 rounded-lg flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-blue-400" />
                   </div>
-                  <div className="w-12 h-12 bg-dark-800 border border-dark-700 rounded-lg flex items-center justify-center text-2xl">
-                    🔮
+                  <div className="w-12 h-12 bg-dark-800 border border-dark-700 rounded-lg flex items-center justify-center">
+                    <Globe2 className="w-6 h-6 text-purple-400" />
                   </div>
                 </div>
                 <span className="text-xs text-dark-400 mt-2">AI Models</span>
@@ -442,9 +449,6 @@ function ProblemSection() {
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             The Search Landscape Has Changed
           </h2>
-          <p className="text-xl text-dark-400 max-w-2xl mx-auto">
-            Consumers are asking AI assistants instead of searching Google. Is your brand part of the conversation?
-          </p>
         </div>
 
         {/* Stats */}
@@ -786,11 +790,9 @@ function PricingSection() {
       period: '',
       description: 'Try GEO tracking for free',
       features: [
-        '25 queries per month',
+        '25 queries / month',
         '2 LLM providers',
         'Basic visibility score',
-        'Community support',
-        '7-day data retention',
       ],
       cta: 'Start Free',
       highlighted: false,
@@ -801,12 +803,9 @@ function PricingSection() {
       period: '/month',
       description: 'For growing businesses',
       features: [
-        '200 queries per month',
+        '200 queries / month',
         'All 4 LLM providers',
-        'Weekly tracking & reports',
-        'Competitor monitoring (3)',
-        'Email alerts',
-        '90-day data retention',
+        'Weekly reports + email alerts',
       ],
       cta: 'Start Pro Trial',
       highlighted: true,
@@ -817,14 +816,9 @@ function PricingSection() {
       period: '/month',
       description: 'For teams & agencies',
       features: [
-        '1,000 queries per month',
-        'All 4 LLM providers',
-        'Daily tracking & reports',
-        'Unlimited competitors',
-        'AI optimization recommendations',
-        'API access',
-        '1-year data retention',
-        'Priority support',
+        '1,000 queries / month',
+        'Daily reports + AI recommendations',
+        'API access + priority support',
       ],
       cta: 'Start Business Trial',
       highlighted: false,
@@ -841,10 +835,6 @@ function PricingSection() {
       features: [
         'Full AI visibility audit across all LLMs',
         'Custom query library (500+ queries)',
-        'Deep competitor analysis',
-        'Content gap identification',
-        'Citation & knowledge graph audit',
-        'Detailed report & recommendations',
         'Strategy presentation call',
       ],
       cta: 'Get Your Audit',
@@ -856,13 +846,8 @@ function PricingSection() {
       description: 'Ongoing optimization & growth',
       features: [
         'Everything in AEO Audit',
-        'Monthly strategy execution',
-        'Content optimization implementation',
-        'Citation building campaigns',
-        'Knowledge graph management',
-        'Weekly progress reports',
+        'Monthly optimization execution',
         'Dedicated AEO specialist',
-        'Quarterly strategy reviews',
       ],
       cta: 'Start AEO Management',
       recommended: true,

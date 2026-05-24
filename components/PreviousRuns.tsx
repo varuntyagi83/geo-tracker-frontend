@@ -17,6 +17,7 @@ import {
 interface PreviousRunsProps {
   companyId?: string;
   onSelectRun?: (run: RunHistorySummary) => void;
+  onStartNew?: () => void;
 }
 
 // Group runs by company name
@@ -30,7 +31,7 @@ interface CompanyGroup {
   lastRunTs: string;
 }
 
-export function PreviousRuns({ companyId, onSelectRun }: PreviousRunsProps) {
+export function PreviousRuns({ companyId, onSelectRun, onStartNew }: PreviousRunsProps) {
   const [runs, setRuns] = useState<RunHistorySummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -216,10 +217,22 @@ export function PreviousRuns({ companyId, onSelectRun }: PreviousRunsProps) {
 
       {/* Empty State */}
       {runs.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <Clock className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="mb-2">No runs found in the last {sinceDays} days</p>
-          <p className="text-sm">Run your first analysis to see data here.</p>
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-primary-500/10 border border-primary-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-8 h-8 text-primary-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-white mb-2">No analyses yet</h3>
+          <p className="text-gray-400 mb-8 max-w-sm mx-auto">
+            Run your first brand visibility check to see how often you appear in AI-generated responses.
+          </p>
+          {onStartNew && (
+            <button
+              onClick={onStartNew}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 rounded-xl font-medium transition-colors text-white"
+            >
+              Start Your First Analysis
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

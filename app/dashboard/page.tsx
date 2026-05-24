@@ -1873,6 +1873,7 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                 <PreviousRuns
                   companyId="demo-company"
                   onSelectRun={handleViewPreviousRun}
+                  onStartNew={() => setShowHistory(false)}
                 />
                 {isStarting && (
                   <div className="mt-4 flex items-center justify-center gap-2 text-blue-400">
