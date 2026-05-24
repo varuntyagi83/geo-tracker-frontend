@@ -6,11 +6,8 @@ import { AuthContext, User, setStoredUser, UserPermissions } from '@/lib/auth';
 import {
   loginUser,
   signupUser,
-  verifyAuthToken,
+  getCurrentUser,
   logoutUser as apiLogout,
-  getAuthToken,
-  setAuthToken,
-  type AuthUser,
 } from '@/lib/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -18,47 +15,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
+    // Check for existing session on mount via httpOnly cookie
     const initAuth = async () => {
-      const token = getAuthToken();
-
-      if (token) {
-        try {
-          // Verify token with backend — this is the only source of truth
-          const response = await verifyAuthToken();
-          if (response.valid && response.user) {
-            const user: User = {
-              email: response.user.email,
-              name: response.user.name,
-              company: response.user.company,
-              role: response.user.role,
-              permissions: response.permissions as UserPermissions,
-            };
-            setUser(user);
-            setStoredUser(user);
-          } else {
-            // Token rejected by backend: force a clean re-login
-            setAuthToken(null);
-            setStoredUser(null);
-            setUser(null);
-          }
-        } catch (error) {
-          // Verification failed (invalid/expired token, or backend
-          // unreachable). Do NOT fall back to a cached localStorage user —
-          // require a fresh login so the UI never shows a session the
-          // backend won't honor.
-          console.warn('Token verification failed; clearing session');
-          setAuthToken(null);
+      try {
+        const response = await getCurrentUser();
+        if (response.success && response.user) {
+          const userData: User = {
+            email: response.user.email,
+            name: response.user.name,
+            company: response.user.company,
+            role: response.user.role,
+            permissions: response.permissions as UserPermissions,
+          };
+          setUser(userData);
+          setStoredUser(userData);
+        } else {
           setStoredUser(null);
           setUser(null);
         }
-      } else {
-        // No token: not authenticated. Clear any stale cached user.
+      } catch {
+        // 401 or network error means not logged in
         setStoredUser(null);
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     initAuth();

@@ -37,8 +37,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Simple local storage based auth for demo purposes
-// In production, replace with Supabase Auth or similar
 const AUTH_STORAGE_KEY = 'geo_tracker_auth';
 
 export function getStoredUser(): User | null {

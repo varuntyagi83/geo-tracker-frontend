@@ -539,6 +539,7 @@ function ResultsView({
   jobId?: string;
   onContinueToCombined?: () => void;
 }) {
+  const { user } = useAuth();
   const { summary } = results;
   const [activeTab, setActiveTab] = useState<'overview' | 'results' | 'competitors' | 'sources' | 'report' | 'history'>('overview');
   const [providerFilter, setProviderFilter] = useState<string>('all');
@@ -933,7 +934,7 @@ function ResultsView({
       )}
 
       {activeTab === 'history' && (
-        <BrandHistory companyId="demo-company" filterBrandName={brandName} />
+        <BrandHistory companyId={user?.email || 'guest'} filterBrandName={brandName} />
       )}
 
       <div className="flex justify-center gap-4 mt-8">
@@ -1077,7 +1078,10 @@ export default function DashboardPage() {
     const domain = normalisedDomain(url);
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-      const res = await fetch(`${API_BASE}/api/seo/analyses?domain=${encodeURIComponent(domain)}&limit=1`);
+      const res = await fetch(`${API_BASE}/api/seo/analyses?domain=${encodeURIComponent(domain)}&limit=1`, {
+        credentials: 'include',
+        headers: { 'X-GeoRaydar-Request': '1' },
+      });
       if (!res.ok) return null;
       const data = await res.json();
       const row = data.analyses?.[0];
@@ -1105,7 +1109,11 @@ export default function DashboardPage() {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
       await fetch(`${API_BASE}/api/seo/analyses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GeoRaydar-Request': '1',
+        },
         body: JSON.stringify({
           domain: normalisedDomain(url),
           start_url: analysis.startUrl,
@@ -1252,7 +1260,11 @@ export default function DashboardPage() {
     try {
       const response = await fetch(`${API_BASE}/api/queries/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GeoRaydar-Request': '1',
+        },
         body: JSON.stringify({
           company_name: brandName,
           industry,
@@ -1362,7 +1374,7 @@ export default function DashboardPage() {
 
     try {
       const config: RunConfig = {
-        companyId: 'demo-company',
+        companyId: user?.email || 'guest',
         brandName,
         industry,
         providers,
@@ -1871,7 +1883,7 @@ ${Object.entries(llm.summary.providerVisibility).map(([p, v]) => `<tr><td>${p}</
                 className="max-w-6xl mx-auto"
               >
                 <PreviousRuns
-                  companyId="demo-company"
+                  companyId={user?.email || 'guest'}
                   onSelectRun={handleViewPreviousRun}
                   onStartNew={() => setShowHistory(false)}
                 />

@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
-import { getAuthToken } from '@/lib/api';
 import AdminUsersManager from '@/components/admin/AdminUsersManager';
 import AdminPricingManager from '@/components/admin/AdminPricingManager';
 
@@ -82,7 +81,7 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useAuth();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [adminReady, setAdminReady] = useState(false);
   const [activeTab, setActiveTab] = useState<'leads' | 'users' | 'pricing'>('leads');
 
   // Management gating based on the unified-auth user (not the legacy adminUser).
@@ -125,22 +124,19 @@ export default function AdminPage() {
     }
 
     // User has admin access - set up admin user state
-    const authToken = getAuthToken();
-    if (authToken) {
-      setToken(authToken);
-      setAdminUser({
-        username: user.email,
-        role: user.role || 'user',
-        permissions: {
-          can_view_leads: user.permissions?.can_view_leads || false,
-          can_view_emails: user.permissions?.can_view_emails || false,
-          can_update_leads: user.permissions?.can_update_leads || false,
-          can_delete_leads: user.permissions?.can_delete_leads || false,
-          can_view_stats: user.permissions?.can_view_stats || false,
-          can_manage_users: user.permissions?.can_manage_users || false,
-        },
-      });
-    }
+    setAdminUser({
+      username: user.email,
+      role: user.role || 'user',
+      permissions: {
+        can_view_leads: user.permissions?.can_view_leads || false,
+        can_view_emails: user.permissions?.can_view_emails || false,
+        can_update_leads: user.permissions?.can_update_leads || false,
+        can_delete_leads: user.permissions?.can_delete_leads || false,
+        can_view_stats: user.permissions?.can_view_stats || false,
+        can_manage_users: user.permissions?.can_manage_users || false,
+      },
+    });
+    setAdminReady(true);
   }, [authLoading, user, router]);
 
   const handleLogout = () => {
@@ -149,7 +145,7 @@ export default function AdminPage() {
   };
 
   const fetchLeads = useCallback(async () => {
-    if (!token) return;
+    if (!adminReady) return;
 
     setIsLoadingLeads(true);
     try {
@@ -157,8 +153,9 @@ export default function AdminPage() {
       if (statusFilter) params.append('status', statusFilter);
 
       const response = await fetch(`${API_BASE_URL}/api/admin/leads?${params}`, {
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
+          'X-GeoRaydar-Request': '1',
         },
       });
 
@@ -171,15 +168,16 @@ export default function AdminPage() {
     } finally {
       setIsLoadingLeads(false);
     }
-  }, [token, statusFilter]);
+  }, [adminReady, statusFilter]);
 
   const fetchStats = useCallback(async () => {
-    if (!token) return;
+    if (!adminReady) return;
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/leads/stats`, {
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
+          'X-GeoRaydar-Request': '1',
         },
       });
 
@@ -190,26 +188,27 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
-  }, [token]);
+  }, [adminReady]);
 
-  // Fetch data when token is available
+  // Fetch data when admin session is ready
   useEffect(() => {
-    if (token) {
+    if (adminReady) {
       fetchLeads();
       fetchStats();
     }
-  }, [token, fetchLeads, fetchStats]);
+  }, [adminReady, fetchLeads, fetchStats]);
 
   const handleUpdateLead = async () => {
-    if (!selectedLead || !newStatus || !token) return;
+    if (!selectedLead || !newStatus) return;
 
     setIsUpdating(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/leads/${selectedLead.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'X-GeoRaydar-Request': '1',
         },
         body: JSON.stringify({ status: newStatus, notes: notes || null }),
       });

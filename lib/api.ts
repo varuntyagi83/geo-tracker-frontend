@@ -36,6 +36,7 @@ async function fetchAPI<T>(
   
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -89,7 +90,7 @@ export async function startRun(config: RunConfig): Promise<JobCreatedResponse> {
     sleep_ms: config.sleepMs || 0,
   };
 
-  const response = await fetchAPI<any>('/api/runs', {
+  const response = await fetchAPIAuth<any>('/api/runs', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -106,7 +107,7 @@ export async function startRun(config: RunConfig): Promise<JobCreatedResponse> {
 
 // Get run status/progress
 export async function getRunStatus(jobId: string): Promise<RunProgress> {
-  const response = await fetchAPI<any>(`/api/runs/${jobId}/status`);
+  const response = await fetchAPIAuth<any>(`/api/runs/${jobId}/status`);
 
   return {
     runId: response.run_id,
@@ -126,7 +127,7 @@ export async function getRunStatus(jobId: string): Promise<RunProgress> {
 
 // Get run results
 export async function getRunResults(jobId: string): Promise<RunResults> {
-  const response = await fetchAPI<any>(`/api/runs/${jobId}/results`);
+  const response = await fetchAPIAuth<any>(`/api/runs/${jobId}/results`);
 
   return {
     summary: {
@@ -171,14 +172,14 @@ export async function getRunResults(jobId: string): Promise<RunResults> {
 
 // Cancel a run
 export async function cancelRun(jobId: string): Promise<{ message: string }> {
-  return fetchAPI<{ message: string }>(`/api/runs/${jobId}/cancel`, {
+  return fetchAPIAuth<{ message: string }>(`/api/runs/${jobId}/cancel`, {
     method: 'POST',
   });
 }
 
 // List recent runs
 export async function listRuns(limit: number = 20): Promise<any[]> {
-  return fetchAPI<any[]>(`/api/runs?limit=${limit}`);
+  return fetchAPIAuth<any[]>(`/api/runs?limit=${limit}`);
 }
 
 // Generate queries (placeholder endpoint)
@@ -193,7 +194,7 @@ export async function generateQueries(
     count: count.toString(),
   });
 
-  const response = await fetchAPI<any>(`/api/queries/generate?${params}`, {
+  const response = await fetchAPIAuth<any>(`/api/queries/generate?${params}`, {
     method: 'POST',
   });
 
@@ -221,7 +222,7 @@ export async function getHistoricalResults(
     params.append('company_id', companyId);
   }
 
-  return fetchAPI<{ results: any[]; count: number }>(`/api/results?${params}`);
+  return fetchAPIAuth<{ results: any[]; count: number }>(`/api/results?${params}`);
 }
 
 // Utility: Poll for run completion
@@ -256,7 +257,7 @@ export async function fetchSheetPrompts(
   worksheetName?: string,
   forceRefresh: boolean = false
 ): Promise<SheetFetchResponse> {
-  const response = await fetchAPI<any>('/api/sheets/prompts', {
+  const response = await fetchAPIAuth<any>('/api/sheets/prompts', {
     method: 'POST',
     body: JSON.stringify({
       sheet_url: sheetUrl,
@@ -284,7 +285,7 @@ export async function fetchSheetPrompts(
 }
 
 export async function validateSheetUrl(url: string): Promise<SheetValidateResponse> {
-  const response = await fetchAPI<any>(`/api/sheets/validate?url=${encodeURIComponent(url)}`);
+  const response = await fetchAPIAuth<any>(`/api/sheets/validate?url=${encodeURIComponent(url)}`);
 
   return {
     valid: response.valid,
@@ -307,7 +308,7 @@ export async function generateVisibilityReport(
   model: string = 'gpt-4.1',
   forceRegenerate: boolean = false
 ): Promise<VisibilityReport> {
-  const response = await fetchAPI<any>('/api/reports/visibility', {
+  const response = await fetchAPIAuth<any>('/api/reports/visibility', {
     method: 'POST',
     body: JSON.stringify({
       job_id: jobId,
@@ -335,7 +336,7 @@ export async function generateVisibilityReport(
 
 export async function getCachedReport(jobId: string): Promise<VisibilityReport | null> {
   try {
-    const response = await fetchAPI<any>(`/api/reports/${jobId}`);
+    const response = await fetchAPIAuth<any>(`/api/reports/${jobId}`);
     return {
       report: response.report,
       generatedAt: response.generated_at,
@@ -360,7 +361,7 @@ export async function getBrands(companyId?: string, limit: number = 50): Promise
     params.append('company_id', companyId);
   }
 
-  const response = await fetchAPI<any>(`/api/brands?${params}`);
+  const response = await fetchAPIAuth<any>(`/api/brands?${params}`);
 
   return {
     brands: response.brands.map((b: any) => ({
@@ -380,7 +381,7 @@ export async function getBrands(companyId?: string, limit: number = 50): Promise
 }
 
 export async function getBrandById(brandId: number): Promise<BrandDetailResponse> {
-  const response = await fetchAPI<any>(`/api/brands/${brandId}`);
+  const response = await fetchAPIAuth<any>(`/api/brands/${brandId}`);
 
   return {
     brand: {
@@ -418,7 +419,7 @@ export async function searchBrandByName(brandName: string, companyId?: string): 
   }
 
   try {
-    const response = await fetchAPI<any>(`/api/brands/search/${encodeURIComponent(brandName)}?${params}`);
+    const response = await fetchAPIAuth<any>(`/api/brands/search/${encodeURIComponent(brandName)}?${params}`);
 
     if (!response.brand) return null;
 
@@ -443,7 +444,7 @@ export async function searchBrandByName(brandName: string, companyId?: string): 
 }
 
 export async function getBrandHistory(brandId: number, limit: number = 20): Promise<BrandRun[]> {
-  const response = await fetchAPI<any>(`/api/brands/${brandId}/history?limit=${limit}`);
+  const response = await fetchAPIAuth<any>(`/api/brands/${brandId}/history?limit=${limit}`);
 
   return response.history.map((r: any) => ({
     id: r.id,
@@ -461,7 +462,7 @@ export async function getBrandHistory(brandId: number, limit: number = 20): Prom
 }
 
 export async function deleteBrand(brandId: number): Promise<{ success: boolean; message: string }> {
-  return fetchAPI<{ success: boolean; message: string }>(`/api/brands/${brandId}`, {
+  return fetchAPIAuth<{ success: boolean; message: string }>(`/api/brands/${brandId}`, {
     method: 'DELETE',
   });
 }
@@ -480,7 +481,7 @@ export async function getRunHistory(
     params.append('company_id', companyId);
   }
 
-  const response = await fetchAPI<any>(`/api/runs/history?${params}`);
+  const response = await fetchAPIAuth<any>(`/api/runs/history?${params}`);
 
   return {
     runs: response.runs.map((r: any) => ({
@@ -548,46 +549,31 @@ export interface AuthVerifyResponse {
   expires_at: string;
 }
 
-// Store token in localStorage
-const AUTH_TOKEN_KEY = 'geo_tracker_token';
-
-export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_TOKEN_KEY);
-}
-
-export function setAuthToken(token: string | null): void {
-  if (typeof window === 'undefined') return;
-  if (token) {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-  } else {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-  }
-}
-
 // Create authenticated fetch wrapper
 async function fetchAPIAuth<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const token = getAuthToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-GeoRaydar-Request': '1',
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers,
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
     const errorData = await response.json().catch(() => ({}));
     throw new APIError(
       response.status,
@@ -610,11 +596,6 @@ export async function signupUser(
     body: JSON.stringify({ email, password, name, company }),
   });
 
-  // Store token on successful signup
-  if (response.token) {
-    setAuthToken(response.token);
-  }
-
   return response;
 }
 
@@ -628,17 +609,12 @@ export async function loginUser(
     body: JSON.stringify({ email, password }),
   });
 
-  // Store token on successful login
-  if (response.token) {
-    setAuthToken(response.token);
-  }
-
   return response;
 }
 
 // Get current user info
-export async function getCurrentUser(): Promise<{ success: boolean; user: AuthUser }> {
-  return fetchAPIAuth<{ success: boolean; user: AuthUser }>('/api/auth/me');
+export async function getCurrentUser(): Promise<{ success: boolean; user: AuthUser; permissions?: UserPermissions }> {
+  return fetchAPIAuth<{ success: boolean; user: AuthUser; permissions?: UserPermissions }>('/api/auth/me');
 }
 
 // Verify token validity
@@ -662,9 +638,13 @@ export async function updateUserProfile(
   );
 }
 
-// Logout user (clear token)
+// Logout user (clear server cookie)
 export function logoutUser(): void {
-  setAuthToken(null);
+  // Clear httpOnly cookie server-side (fire and forget)
+  fetch(`${API_BASE_URL}/api/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  }).catch(() => {});
 }
 
 // ============================================
