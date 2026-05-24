@@ -751,3 +751,32 @@ export async function updateCompanyPrice(
 }
 
 export { APIError };
+
+// ============================================
+// BILLING / STRIPE
+// ============================================
+
+export async function getUserPlan(): Promise<{
+  plan: string;
+  queries_per_month: number;
+  queries_used_this_month: number;
+  queries_remaining: number;
+  max_providers: number;
+  stripe_customer_id: string | null;
+}> {
+  return fetchAPIAuth('/api/user/plan');
+}
+
+export async function createCheckoutSession(plan: string): Promise<{ url: string }> {
+  return fetchAPIAuth('/api/stripe/create-checkout-session', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  });
+}
+
+export async function createPortalSession(): Promise<{ url: string }> {
+  return fetchAPIAuth('/api/stripe/create-portal-session', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
