@@ -14,6 +14,9 @@ export interface UserPermissions {
   can_manage_users: boolean;
   can_access_dashboard: boolean;
   can_access_admin: boolean;
+  // Super-admin only capabilities (optional: older tokens may omit them)
+  can_manage_pricing?: boolean;
+  can_manage_admins?: boolean;
 }
 
 export interface User {

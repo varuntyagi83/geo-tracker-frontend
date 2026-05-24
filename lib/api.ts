@@ -517,6 +517,9 @@ export interface UserPermissions {
   can_manage_users: boolean;
   can_access_dashboard: boolean;
   can_access_admin: boolean;
+  // Super-admin only capabilities (optional: older tokens may omit them)
+  can_manage_pricing?: boolean;
+  can_manage_admins?: boolean;
 }
 
 export interface AuthUser {
@@ -662,6 +665,114 @@ export async function updateUserProfile(
 // Logout user (clear token)
 export function logoutUser(): void {
   setAuthToken(null);
+}
+
+// ============================================
+// ADMIN MANAGEMENT (users + company pricing)
+// ============================================
+
+export type AdminUserRole = 'user' | 'demo' | 'admin' | 'super_admin';
+
+export interface ManagedUser {
+  id: number;
+  email: string;
+  name: string;
+  company?: string | null;
+  role: AdminUserRole;
+  is_active: boolean;
+  created_at?: string | null;
+  last_login?: string | null;
+}
+
+export interface ManagedCompany {
+  id: number;
+  brand_name: string;
+  industry?: string | null;
+  market?: string | null;
+  company_id?: string | null;
+  price: number | null;
+  total_runs: number;
+  last_run_at?: string | null;
+}
+
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  name: string;
+  company?: string;
+  role: AdminUserRole;
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  company?: string;
+  role?: AdminUserRole;
+  is_active?: boolean;
+}
+
+// List all users
+export async function listAdminUsers(): Promise<ManagedUser[]> {
+  const response = await fetchAPIAuth<{ success: boolean; users: ManagedUser[] }>(
+    '/api/admin/users'
+  );
+  return response.users;
+}
+
+// Create a new user
+export async function createAdminUser(input: CreateUserInput): Promise<ManagedUser> {
+  const response = await fetchAPIAuth<{ success: boolean; user: ManagedUser }>(
+    '/api/admin/users',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }
+  );
+  return response.user;
+}
+
+// Update an existing user
+export async function updateAdminUser(
+  id: number,
+  input: UpdateUserInput
+): Promise<ManagedUser> {
+  const response = await fetchAPIAuth<{ success: boolean; user: ManagedUser }>(
+    `/api/admin/users/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }
+  );
+  return response.user;
+}
+
+// Delete a user
+export async function deleteAdminUser(id: number): Promise<{ success: boolean }> {
+  return fetchAPIAuth<{ success: boolean }>(`/api/admin/users/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// List all companies (for pricing management)
+export async function listAdminCompanies(): Promise<ManagedCompany[]> {
+  const response = await fetchAPIAuth<{ success: boolean; companies: ManagedCompany[] }>(
+    '/api/admin/companies'
+  );
+  return response.companies;
+}
+
+// Update a company's price (null/empty clears it)
+export async function updateCompanyPrice(
+  id: number,
+  price: number | null
+): Promise<ManagedCompany> {
+  const response = await fetchAPIAuth<{ success: boolean; company: ManagedCompany }>(
+    `/api/admin/companies/${id}/price`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ price }),
+    }
+  );
+  return response.company;
 }
 
 export { APIError };

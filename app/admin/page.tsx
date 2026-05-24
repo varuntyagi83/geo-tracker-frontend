@@ -21,10 +21,14 @@ import {
   Filter,
   BarChart3,
   AlertCircle,
+  DollarSign,
+  UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { getAuthToken } from '@/lib/api';
+import AdminUsersManager from '@/components/admin/AdminUsersManager';
+import AdminPricingManager from '@/components/admin/AdminPricingManager';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -79,6 +83,13 @@ export default function AdminPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'leads' | 'users' | 'pricing'>('leads');
+
+  // Management gating based on the unified-auth user (not the legacy adminUser).
+  const role = user?.role;
+  const isManagementAdmin = role === 'admin' || role === 'super_admin';
+  const canManageAdmins = user?.permissions?.can_manage_admins === true;
+  const canManagePricing = user?.permissions?.can_manage_pricing === true;
 
   // Leads data
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -103,7 +114,12 @@ export default function AdminPage() {
     }
 
     // Logged in but doesn't have admin access - redirect to dashboard
-    if (!user.permissions?.can_access_admin && user.role !== 'admin' && user.role !== 'demo') {
+    if (
+      !user.permissions?.can_access_admin &&
+      user.role !== 'admin' &&
+      user.role !== 'super_admin' &&
+      user.role !== 'demo'
+    ) {
       router.push('/dashboard');
       return;
     }
@@ -235,8 +251,10 @@ export default function AdminPage() {
               <Link href="/dashboard" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
                 <Globe className="w-8 h-8 text-primary-500" />
                 <div>
-                  <h1 className="text-xl font-bold">Admin Panel</h1>
-                  <p className="text-xs text-dark-400">Lead Management</p>
+                  <h1 className="text-xl font-bold font-heading">Admin Panel</h1>
+                  <p className="text-xs text-dark-400">
+                    {isManagementAdmin ? 'Console' : 'Lead Management'}
+                  </p>
                 </div>
               </Link>
             </div>
@@ -269,6 +287,61 @@ export default function AdminPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Tab navigation — extra tabs only for management admins */}
+        {isManagementAdmin && (
+          <div className="flex items-center gap-2 mb-6 border-b border-dark-700">
+            <button
+              onClick={() => setActiveTab('leads')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'leads'
+                  ? 'border-primary-500 text-primary-400'
+                  : 'border-transparent text-dark-400 hover:text-white'
+              )}
+            >
+              <Mail className="w-4 h-4" />
+              Leads
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'users'
+                  ? 'border-primary-500 text-primary-400'
+                  : 'border-transparent text-dark-400 hover:text-white'
+              )}
+            >
+              <UserCog className="w-4 h-4" />
+              Users
+            </button>
+            <button
+              onClick={() => setActiveTab('pricing')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'pricing'
+                  ? 'border-primary-500 text-primary-400'
+                  : 'border-transparent text-dark-400 hover:text-white'
+              )}
+            >
+              <DollarSign className="w-4 h-4" />
+              Pricing
+            </button>
+          </div>
+        )}
+
+        {/* Users management tab */}
+        {isManagementAdmin && activeTab === 'users' && (
+          <AdminUsersManager canManageAdmins={canManageAdmins} />
+        )}
+
+        {/* Pricing management tab */}
+        {isManagementAdmin && activeTab === 'pricing' && (
+          <AdminPricingManager canManagePricing={canManagePricing} />
+        )}
+
+        {/* Leads tab (default; the only view for non-management admins) */}
+        {(!isManagementAdmin || activeTab === 'leads') && (
+        <>
         {/* Demo user notice */}
         {adminUser?.role === 'demo' && (
           <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3">
@@ -472,6 +545,8 @@ export default function AdminPage() {
             </table>
           </div>
         </div>
+        </>
+        )}
       </main>
 
       {/* Update Lead Modal */}
